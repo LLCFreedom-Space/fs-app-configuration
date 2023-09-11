@@ -63,6 +63,24 @@ public struct FSAppConfigurationAsync {
         return valueJWKS.isEmpty ? self.getJWKSFromLocalDirectory(by: name) : valueJWKS
     }
 
+    /// Get Version value
+    /// - Parameters:
+    ///   - consulStatus: `HTTPResponseStatus` or `nil` depending on whether the status was obtained from the service
+    ///   - url: `String` on which the application is running. Example - `http://127.0.0.1:8500`, `https://xmpl-consul.example.com`
+    ///   - path: `String` key by which the Version will be obtained
+    ///   - name: `String`the name of the Version file that lies in the local directory
+    /// - Returns: `String` Version value
+    public func getVersion(with consulStatus: HTTPResponseStatus?, by url: String, and path: String, file name: String) async -> String {
+        let consulURI = URI(string: url + "/" + path)
+        var versionValue = ""
+
+        if consulStatus == .ok {
+            let valueResult = try? await getVersionFromConsul(by: consulURI)
+            versionValue = valueResult ?? ""
+        }
+        return versionValue.isEmpty ? self.getVersionFromLocalDirectory(by: name) : versionValue
+    }
+
     /// Get value from Consul
     /// - Parameters:
     ///   - path: `URI` full path to the file, including service `host` and `port`. Example - `http://127.0.0.1:8500/v1/kv/config-develop/example-service/server-port`
@@ -77,6 +95,27 @@ public struct FSAppConfigurationAsync {
                 self.app.logger.info("SUCCESS: Encoded '\(value)' by '\(path)' from consul")
             }
             return value
+        }.get()
+    }
+
+    /// Get `Version` value from Consul
+    /// - Parameters:
+    ///   - path: `URI` full path to the file, including service host and port
+    /// - Returns: `String` `JWKS` value
+    private func getVersionFromConsul(by path: URI) async throws -> String {
+        try await self.app.client.get(path).map { response -> String in
+            let decodingDataValue = self.decode(response, path)
+            var versionString: String?
+            do {
+                versionString = try JSONDecoder().decode(String.self, from: decodingDataValue)
+            } catch {
+                self.app.logger.error("ERROR: Failed Decode Version from data. ERROR - \(error.localizedDescription)")
+            }
+            guard let versionString, !versionString.isEmpty else {
+                self.app.logger.error("ERROR: Version value in consul equal '\(String(describing: versionString))'.")
+                return ""
+            }
+            return versionString
         }.get()
     }
 
@@ -131,6 +170,23 @@ public struct FSAppConfigurationAsync {
         }
         self.app.logger.info("SUCCESS: Get the JWKS value from the local machine along the file path \(jwksFilePath)")
         return jwksString
+    }
+
+    /// Get `Version` value from Local Directory
+    /// - Returns: `String`
+    private func getVersionFromLocalDirectory(by name: String) -> String {
+        let versionPath = self.app.directory.workingDirectory + name
+
+        guard let versionValue = FileManager.default.contents(atPath: versionPath) else {
+            self.app.logger.error("ERROR: Failed to load Version file at the file path - '\(versionPath)'")
+            fatalError("ERROR: Failed to load Version file at the file path - '\(versionPath)'")
+        }
+        guard let versionString = String(data: versionValue, encoding: .utf8), !versionString.isEmpty else {
+            self.app.logger.error("ERROR: Failed to encoding Version value from - '\(versionValue)'")
+            fatalError("ERROR: Failed to encoding Version value from - '\(versionValue)'")
+        }
+        self.app.logger.info("SUCCESS: Get the Version value from the local machine along the file path \(versionPath)")
+        return versionString
     }
 
     /// Decode Consul `ClientResponse`

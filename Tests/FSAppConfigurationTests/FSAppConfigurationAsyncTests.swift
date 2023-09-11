@@ -51,4 +51,11 @@ final class FSAppConfigurationAsyncTests: XCTestCase {
         let variable = await app.appConfigurationAsync.getJWKS(with: .ok, by: url, and: consulKey, file: "")
         XCTAssertNotNil(variable)
     }
+
+    func testGetVersionAsync() async throws {
+        let url = "https://localhost/v1/kv/configs/example"
+        let consulKey = "version"
+        let variable = await app.appConfigurationAsync.getVersion(with: .ok, by: url, and: consulKey, file: "")
+        XCTAssertNotNil(variable)
+    }
 }
