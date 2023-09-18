@@ -104,18 +104,15 @@ public struct FSAppConfigurationAsync {
     /// - Returns: `String` `JWKS` value
     private func getVersionFromConsul(by path: URI) async throws -> String {
         try await self.app.client.get(path).map { response -> String in
-            let decodingDataValue = self.decode(response, path)
-            var versionString: String?
-            do {
-                versionString = try JSONDecoder().decode(String.self, from: decodingDataValue)
-            } catch {
-                self.app.logger.error("ERROR: Failed Decode Version from data. ERROR - \(error.localizedDescription)")
-            }
-            guard let versionString, !versionString.isEmpty else {
-                self.app.logger.error("ERROR: Version value in consul equal '\(String(describing: versionString))'.")
+            let dataValue = self.decode(response, path)
+            let versionString = String(decoding: dataValue, as: UTF8.self)
+            if versionString.isEmpty {
+                self.app.logger.error("ERROR: Encoded empty value by '\(path)' in consul")
                 return ""
+            } else {
+                self.app.logger.info("SUCCESS: Encoded '\(dataValue)' by '\(path)' from consul")
+                return versionString
             }
-            return versionString
         }.get()
     }
 
