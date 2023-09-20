@@ -196,9 +196,9 @@ public struct FSAppConfigurationAsync {
         } catch {
             self.app.logger.error("ERROR: Failed decode ClientResponse from consul. LocalizedError - \(error.localizedDescription), error - \(error). For path - '\(path)'")
         }
-        guard let stringValue = content[0].value else {
-            self.app.logger.error("ERROR: No value was found at the given key - '\(String(describing: content[0].key))'")
-            fatalError("ERROR: No value was found at the given key - '\(String(describing: content[0].key))'")
+        guard let stringValue = content.first?.value else {
+            self.app.logger.error("ERROR: No value was found at the given key - '\(String(describing: content.first?.key))'")
+            fatalError("ERROR: No value was found at the given key - '\(String(describing: content.first?.key))'")
         }
         guard let arrayOfRawBytes = Array(decodingBase64: stringValue) else {
             self.app.logger.error("ERROR: Failed encoded '\(stringValue)' to 'Data'")
