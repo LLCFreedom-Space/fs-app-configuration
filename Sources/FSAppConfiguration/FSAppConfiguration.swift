@@ -197,8 +197,8 @@ public struct FSAppConfiguration {
             self.app.logger.error("ERROR: Failed decode ClientResponse from consul. LocalizedError - \(error.localizedDescription), error - \(error). For path - '\(path)'")
         }
         guard let stringValue = content.first?.value else {
-            self.app.logger.error("ERROR: No value was found at the given key - '\(String(describing: content.first?.key))'")
-            fatalError("ERROR: No value was found at the given key - '\(String(describing: content.first?.key))'")
+            self.app.logger.error("ERROR: No value was found at the - '\(path)'")
+            fatalError("ERROR: No value was found at the - '\(path)'")
         }
         guard let arrayOfRawBytes = Array(decodingBase64: stringValue) else {
             self.app.logger.error("ERROR: Failed encoded '\(stringValue)' to 'Data'")
