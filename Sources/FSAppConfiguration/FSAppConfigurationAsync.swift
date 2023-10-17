@@ -110,7 +110,7 @@ public struct FSAppConfigurationAsync {
                 self.app.logger.error("ERROR: Encoded empty value by '\(path)' in consul")
                 return ""
             } else {
-                self.app.logger.info("SUCCESS: Encoded '\(dataValue)' by '\(path)' from consul")
+                self.app.logger.info("SUCCESS: Encoded '\(versionString)' by '\(path)' from consul")
                 return versionString
             }
         }.get()
