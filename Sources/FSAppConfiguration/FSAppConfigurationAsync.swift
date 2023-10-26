@@ -175,7 +175,7 @@ public struct FSAppConfigurationAsync {
             self.app.logger.error("ERROR: Failed to encoding Version value from - '\(versionValue)'")
             fatalError("ERROR: Failed to encoding Version value from - '\(versionValue)'")
         }
-        self.app.logger.info("SUCCESS: Get the Version value from the local machine along the file path \(versionPath)")
+        self.app.logger.info("SUCCESS: Get the Version - \(versionString) from the local machine along the file path \(versionPath)")
         return versionString
     }
 
