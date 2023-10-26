@@ -71,14 +71,7 @@ public struct FSAppConfiguration {
     ///   - name: `String`the name of the Version file that lies in the local directory
     /// - Returns: `String` Version value
     public func getVersion(with consulStatus: HTTPResponseStatus?, by url: String, and path: String, file name: String) -> String {
-        let consulURI = URI(string: url + "/" + path)
-        var versionValue = ""
-
-        if consulStatus == .ok {
-            let valueResult = try? getVersionFromConsul(by: consulURI).wait()
-            versionValue = valueResult ?? ""
-        }
-        return versionValue.isEmpty ? self.getVersionFromLocalDirectory(by: name) : versionValue
+        self.getVersionFromLocalDirectory(by: name)
     }
 
     /// Get value from Consul
