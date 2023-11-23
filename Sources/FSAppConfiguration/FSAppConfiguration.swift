@@ -127,7 +127,7 @@ public struct FSAppConfiguration {
                 return ""
             } else {
                 self.app.logger.info("SUCCESS: Encoded '\(versionString)' by '\(path)' from consul")
-                return versionString
+                return versionString.replacingOccurrences(of: "\n", with: "")
             }
         }
     }
@@ -176,7 +176,7 @@ public struct FSAppConfiguration {
             fatalError("ERROR: Failed to encoding Version value from - '\(versionValue)'")
         }
         self.app.logger.info("SUCCESS: Get the Version - \(versionString) from the local machine along the file path \(versionPath)")
-        return versionString
+        return versionString.replacingOccurrences(of: "\n", with: "")
     }
 
     /// Decode Consul `ClientResponse`
