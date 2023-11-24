@@ -121,13 +121,13 @@ public struct FSAppConfiguration {
     private func getVersionFromConsul(by path: URI) -> EventLoopFuture<String> {
         self.app.client.get(path).map { response -> String in
             let dataValue = self.decode(response, path)
-            let versionString = String(decoding: dataValue, as: UTF8.self)
+            let versionString = String(decoding: dataValue, as: UTF8.self).replacingOccurrences(of: "\n", with: "")
             if versionString.isEmpty {
                 self.app.logger.error("ERROR: Encoded empty value by '\(path)' in consul")
                 return ""
             } else {
                 self.app.logger.info("SUCCESS: Encoded '\(versionString)' by '\(path)' from consul")
-                return versionString.replacingOccurrences(of: "\n", with: "")
+                return versionString
             }
         }
     }
@@ -171,12 +171,12 @@ public struct FSAppConfiguration {
             self.app.logger.error("ERROR: Failed to load Version file at the file path - '\(versionPath)'")
             fatalError("ERROR: Failed to load Version file at the file path - '\(versionPath)'")
         }
-        guard let versionString = String(data: versionValue, encoding: .utf8), !versionString.isEmpty else {
+        guard let versionString = String(data: versionValue, encoding: .utf8)?.replacingOccurrences(of: "\n", with: ""), !versionString.isEmpty else {
             self.app.logger.error("ERROR: Failed to encoding Version value from - '\(versionValue)'")
             fatalError("ERROR: Failed to encoding Version value from - '\(versionValue)'")
         }
         self.app.logger.info("SUCCESS: Get the Version - \(versionString) from the local machine along the file path \(versionPath)")
-        return versionString.replacingOccurrences(of: "\n", with: "")
+        return versionString
     }
 
     /// Decode Consul `ClientResponse`
