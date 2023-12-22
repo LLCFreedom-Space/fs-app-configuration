@@ -23,7 +23,7 @@ public struct FSAppConfiguration {
     public func getConsulStatus(by url: String, and path: String, for configuration: String) -> HTTPResponseStatus? {
         var status: HTTPResponseStatus?
         status = try? app.client.get(URI(string: url + path)).map { $0.status }.wait()
-        self.app.logger.info("ConsulKV connection status - \(String(describing: status?.reasonPhrase)). Connection for consul by URL - \(url), and path - \(path), for - \(configuration)")
+        self.app.logger.debug("ConsulKV connection status - \(String(describing: status?.reasonPhrase)). Connection for consul by URL - \(url), and path - \(path), for - \(configuration)")
         return status
     }
 
