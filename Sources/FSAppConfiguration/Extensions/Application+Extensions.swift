@@ -36,7 +36,7 @@ extension Application {
     /// - `set`: Stores the configuration in `Application.storage` under the key `AppConfigurationKey`.
     ///
     /// This allows safely attaching a custom configuration object to the `Application` lifecycle.
-    var appConfiguration: AppConfigurationProtocol {
+    public var appConfiguration: AppConfigurationProtocol {
         get {
             guard let manager = storage[AppConfigurationKey.self] else {
                 fatalError("AppConfiguration not setup.")
