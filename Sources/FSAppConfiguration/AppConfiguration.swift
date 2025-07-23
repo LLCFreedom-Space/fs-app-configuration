@@ -1,18 +1,37 @@
+// FS App Configuration
+// Copyright (C) 2025  FREEDOM SPACE, LLC
+
 //
-//  FSAppConfigurationAsync.swift
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as published
+//  by the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
+//
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+//
+//  AppConfiguration.swift
 //
 //
 //  Created by Mykola Buhaiov on 09.03.2023.
-//  Copyright © 2023 Freedom Space LLC
-//  All rights reserved: http://opensource.org/licenses/MIT
 //
 
 import Vapor
 import JWT
 
-public struct FSAppConfigurationAsync {
+public struct AppConfiguration: AppConfigurationProtocol, @unchecked Sendable {
     /// Application
     let app: Application
+
+    init(app: Application) {
+        self.app = app
+    }
 
     /// Get connection status for consul
     /// - Parameters:
@@ -21,9 +40,8 @@ public struct FSAppConfigurationAsync {
     ///   - configuration: `String` the path that shows the configuration environment. Example - `/v1/kv/config-stage`, `/v1/kv/config-develop`
     /// - Returns: `HTTPResponseStatus` or `nil` depending on whether the status was obtained from the service
     public func getConsulStatus(by url: String, and path: String, for configuration: String) async -> HTTPResponseStatus? {
-        var status: HTTPResponseStatus?
-        status = try? await app.client.get(URI(string: url + path)).map { $0.status }.get()
-        self.app.logger.debug("ConsulKV connection status - \(String(describing: status?.reasonPhrase)). Connection for consul by URL - \(url), and path - \(path), for - \(configuration)")
+        let status = try? await app.client.get(URI(string: url + path)).status
+        app.logger.debug("ConsulKV connection status - \(String(describing: status?.reasonPhrase)). Connection for consul by URL - \(url), and path - \(path), for - \(configuration)")
         return status
     }
 
@@ -42,7 +60,7 @@ public struct FSAppConfigurationAsync {
             let valueResult = try? await getValueFromConsul(by: consulURI)
             value = valueResult ?? ""
         }
-        return value.isEmpty ? self.getValueFromEnvironment(by: environmentKey) : value
+        return value.isEmpty ? getValueFromEnvironment(by: environmentKey) : value
     }
 
     /// Get JWKS value
@@ -60,7 +78,7 @@ public struct FSAppConfigurationAsync {
             let valueResult = try? await getJWKSFromConsul(by: consulURI)
             valueJWKS = valueResult ?? ""
         }
-        return valueJWKS.isEmpty ? self.getJWKSFromLocalDirectory(by: name) : valueJWKS
+        return valueJWKS.isEmpty ? getJWKSFromLocalDirectory(by: name) : valueJWKS
     }
 
     /// Get Version value
@@ -71,7 +89,7 @@ public struct FSAppConfigurationAsync {
     ///   - name: `String`the name of the Version file that lies in the local directory
     /// - Returns: `String` Version value
     public func getVersion(with consulStatus: HTTPResponseStatus?, by url: String, and path: String, file name: String) async -> String {
-        self.getVersionFromLocalDirectory(by: name)
+        getVersionFromLocalDirectory(by: name)
     }
 
     /// Get value from Consul
@@ -79,16 +97,15 @@ public struct FSAppConfigurationAsync {
     ///   - path: `URI` full path to the file, including service `host` and `port`. Example - `http://127.0.0.1:8500/v1/kv/config-develop/example-service/server-port`
     /// - Returns: `String` obtained value
     private func getValueFromConsul(by path: URI) async throws -> String {
-        try await self.app.client.get(path).map { response -> String in
-            let dataValue = self.decode(response, path)
-            let value = String(decoding: dataValue, as: UTF8.self)
-            if value.isEmpty {
-                self.app.logger.error("ERROR: Encoded empty value by '\(path)' in consul")
-            } else {
-                self.app.logger.info("SUCCESS: Encoded '\(value)' by '\(path)' from consul")
-            }
-            return value
-        }.get()
+        let response = try await app.client.get(path)
+        let dataValue = decode(response, path)
+        let value = String(decoding: dataValue, as: UTF8.self)
+        if value.isEmpty {
+            app.logger.error("Encoded empty value by '\(path)' in consul")
+        } else {
+            app.logger.info("SUCCESS: Encoded '\(value)' by '\(path)' from consul")
+        }
+        return value
     }
 
     /// Get `Version` value from Consul
@@ -96,17 +113,16 @@ public struct FSAppConfigurationAsync {
     ///   - path: `URI` full path to the file, including service host and port
     /// - Returns: `String` `JWKS` value
     private func getVersionFromConsul(by path: URI) async throws -> String {
-        try await self.app.client.get(path).map { response -> String in
-            let dataValue = self.decode(response, path)
-            let versionString = String(decoding: dataValue, as: UTF8.self).replacingOccurrences(of: "\n", with: "")
-            if versionString.isEmpty {
-                self.app.logger.error("ERROR: Encoded empty value by '\(path)' in consul")
-                return ""
-            } else {
-                self.app.logger.info("SUCCESS: Encoded '\(versionString)' by '\(path)' from consul")
-                return versionString
-            }
-        }.get()
+        let response = try await app.client.get(path)
+        let dataValue = decode(response, path)
+        let versionString = String(decoding: dataValue, as: UTF8.self).replacingOccurrences(of: "\n", with: "")
+        if versionString.isEmpty {
+            app.logger.error("Encoded empty value by '\(path)' in consul")
+            return ""
+        } else {
+            app.logger.info("SUCCESS: Encoded '\(versionString)' by '\(path)' from consul")
+            return versionString
+        }
     }
 
     /// Get `JWKS` value from Consul
@@ -114,22 +130,21 @@ public struct FSAppConfigurationAsync {
     ///   - path: `URI` full path to the file, including service host and port
     /// - Returns: `String` `JWKS` value
     private func getJWKSFromConsul(by path: URI) async throws -> String {
-       try await self.app.client.get(path).map { response -> String in
-            let decodingDataValue = self.decode(response, path)
-            var jwksModel: JWKS?
-            do {
-                jwksModel = try JSONDecoder().decode(JWKS.self, from: decodingDataValue)
-            } catch {
-                self.app.logger.error("ERROR: Failed Decode JWKS from data. ERROR - \(error.localizedDescription)")
-            }
-            let jwksString = String(decoding: decodingDataValue, as: UTF8.self)
+        let response = try await app.client.get(path)
+        let decodingDataValue = decode(response, path)
+        var jwksModel: JWKS?
+        do {
+            jwksModel = try JSONDecoder().decode(JWKS.self, from: decodingDataValue)
+        } catch {
+            app.logger.error("Failed Decode JWKS from data. ERROR - \(error.localizedDescription)")
+        }
+        let jwksString = String(decoding: decodingDataValue, as: UTF8.self)
 
-            guard jwksModel != nil, !jwksString.isEmpty else {
-                self.app.logger.error("ERROR: JWKS value in consul equal '\(jwksString)'.")
-                return ""
-            }
-            return jwksString
-        }.get()
+        guard jwksModel != nil, !jwksString.isEmpty else {
+            app.logger.error("JWKS value in consul equal '\(jwksString)'.")
+            return ""
+        }
+        return jwksString
     }
 
     /// Get value from `.env` file
@@ -137,8 +152,8 @@ public struct FSAppConfigurationAsync {
     /// - Returns: `String` obtained value
     private func getValueFromEnvironment(by key: String) -> String {
         guard let value = Environment.get(key), !value.isEmpty else {
-            app.logger.error("ERROR: No value was found at the given - '\(key)'")
-            fatalError("ERROR: No value was found at the given - '\(key)'")
+            app.logger.error("No value was found at the given - '\(key)'")
+            fatalError("No value was found at the given - '\(key)'")
         }
         app.logger.info("SUCCESS: Get '\(value)' by the given - '\(key)' get from local machine")
         return value
@@ -148,34 +163,34 @@ public struct FSAppConfigurationAsync {
     /// - Parameter name: `String` the name of the `JWKS` file that lies in the local directory
     /// - Returns: `String` JWKS value
     private func getJWKSFromLocalDirectory(by name: String) -> String {
-        let jwksFilePath = self.app.directory.workingDirectory + name
+        let jwksFilePath = app.directory.workingDirectory + name
 
         guard let jwksValue = FileManager.default.contents(atPath: jwksFilePath) else {
-            self.app.logger.error("ERROR: Failed to load JWKS Keypair file at the file path - '\(jwksFilePath)'")
-            fatalError("ERROR: Failed to load JWKS Keypair file at the file path - '\(jwksFilePath)'")
+            app.logger.error("Failed to load JWKS Keypair file at the file path - '\(jwksFilePath)'")
+            fatalError("Failed to load JWKS Keypair file at the file path - '\(jwksFilePath)'")
         }
         guard let jwksString = String(data: jwksValue, encoding: .utf8), !jwksString.isEmpty else {
-            self.app.logger.error("ERROR: Failed to encoding JWKS value from - '\(jwksValue)'")
-            fatalError("ERROR: Failed to encoding JWKS value from - '\(jwksValue)'")
+            app.logger.error("Failed to encoding JWKS value from - '\(jwksValue)'")
+            fatalError("Failed to encoding JWKS value from - '\(jwksValue)'")
         }
-        self.app.logger.info("SUCCESS: Get the JWKS value from the local machine along the file path \(jwksFilePath)")
+        app.logger.info("SUCCESS: Get the JWKS value from the local machine along the file path \(jwksFilePath)")
         return jwksString
     }
 
     /// Get `Version` value from Local Directory
     /// - Returns: `String`
     private func getVersionFromLocalDirectory(by name: String) -> String {
-        let versionPath = self.app.directory.workingDirectory + name
+        let versionPath = app.directory.workingDirectory + name
 
         guard let versionValue = FileManager.default.contents(atPath: versionPath) else {
-            self.app.logger.error("ERROR: Failed to load Version file at the file path - '\(versionPath)'")
-            fatalError("ERROR: Failed to load Version file at the file path - '\(versionPath)'")
+            app.logger.error("Failed to load Version file at the file path - '\(versionPath)'")
+            fatalError("Failed to load Version file at the file path - '\(versionPath)'")
         }
         guard let versionString = String(data: versionValue, encoding: .utf8)?.replacingOccurrences(of: "\n", with: ""), !versionString.isEmpty else {
-            self.app.logger.error("ERROR: Failed to encoding Version value from - '\(versionValue)'")
-            fatalError("ERROR: Failed to encoding Version value from - '\(versionValue)'")
+            app.logger.error("Failed to encoding Version value from - '\(versionValue)'")
+            fatalError("Failed to encoding Version value from - '\(versionValue)'")
         }
-        self.app.logger.info("SUCCESS: Get the Version - \(versionString) from the local machine along the file path \(versionPath)")
+        app.logger.info("SUCCESS: Get the Version - \(versionString) from the local machine along the file path \(versionPath)")
         return versionString
     }
 
@@ -187,15 +202,15 @@ public struct FSAppConfigurationAsync {
         do {
             content = try response.content.decode([ConsulKeyValueResponse].self)
         } catch {
-            self.app.logger.error("ERROR: Failed decode ClientResponse from consul. LocalizedError - \(error.localizedDescription), error - \(error). For path - '\(path)'")
+            app.logger.error("Failed decode ClientResponse from consul. LocalizedError - \(error.localizedDescription), error - \(error). For path - '\(path)'")
         }
         guard let stringValue = content.first?.value else {
-            self.app.logger.error("ERROR: No value was found at the - '\(path)'")
-            fatalError("ERROR: No value was found at the - '\(path)'")
+            app.logger.error("No value was found at the - '\(path)'")
+            fatalError("No value was found at the - '\(path)'")
         }
         guard let arrayOfRawBytes = Array(decodingBase64: stringValue) else {
-            self.app.logger.error("ERROR: Failed encoded '\(stringValue)' to 'Data'")
-            fatalError("ERROR: Failed encoded '\(stringValue)' to 'Data'")
+            app.logger.error("Failed encoded '\(stringValue)' to 'Data'")
+            fatalError("Failed encoded '\(stringValue)' to 'Data'")
         }
         return Data(arrayOfRawBytes)
     }
