@@ -27,9 +27,9 @@ import JWT
 
 public struct AppConfiguration: AppConfigurationProtocol, @unchecked Sendable {
     /// Application
-    let app: Application
+    public let app: Application
 
-    init(app: Application) {
+    public init(app: Application) {
         self.app = app
     }
 
