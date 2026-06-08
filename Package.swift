@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,16 +6,18 @@ import PackageDescription
 let package = Package(
     name: "fs-app-configuration",
     platforms: [
-        .macOS(.v13)
+        .macOS(.v15)
     ],
     products: [
         .library(name: "AppConfiguration", targets: ["AppConfiguration"]),
     ],
     dependencies: [
         // 💧 A server-side Swift web framework.
-        .package(url: "https://github.com/vapor/vapor.git", from: "4.110.2"),
-        // 🔏 Vapor JWT provider
-        .package(url: "https://github.com/vapor/jwt.git", from: "4.0.0"),
+        .package(url: "https://github.com/vapor/vapor.git", from: "4.120.2"),
+        // A Swift library for reading configuration in applications and libraries.
+        .package(url: "https://github.com/apple/swift-configuration", from: "1.0.0"),
+        // 📄 Swift-DocC plugin for generating documentation.
+        .package(url: "https://github.com/apple/swift-docc-plugin.git", from: "1.0.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -24,7 +26,7 @@ let package = Package(
             name: "AppConfiguration",
             dependencies: [
                 .product(name: "Vapor", package: "vapor"),
-                .product(name: "JWT", package: "jwt"),
+                .product(name: "Configuration", package: "swift-configuration"),
             ]
         ),
         .testTarget(

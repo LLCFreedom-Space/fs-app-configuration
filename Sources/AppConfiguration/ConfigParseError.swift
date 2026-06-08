@@ -16,25 +16,22 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //
-//  Configure.swift
+//  ConfigParseError.swift
+//  fs-app-configuration
 //
-//
-//  Created by Mykola Buhaiov on 09.03.2023.
+//  Created by Mykola Buhaiov on 07.06.2026.
 //
 
 import Vapor
+import Configuration
 
-public struct Configure {
-    /// Application
-    let app: Application
+public enum ConfigParseError: Error, CustomStringConvertible {
+    case valueNotConvertible(key: String, type: ConfigType)
 
-    public func logLevel() {
-        if let logLevel = Environment.process.LOG_LEVEL {
-            app.logger.logLevel = Logger.Level(rawValue: logLevel) ?? .info
-            app.logger.info("SUCCESS: Server start with logLevel: \(logLevel)")
-        } else {
-            app.logger.logLevel = .info
-            app.logger.info("SUCCESS: Server start with logLevel: .info")
+    public var description: String {
+        switch self {
+        case let .valueNotConvertible(key, type):
+            return "Config value for key '\(key)' could not be converted to type \(type)."
         }
     }
 }

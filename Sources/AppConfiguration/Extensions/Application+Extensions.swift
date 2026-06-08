@@ -22,36 +22,49 @@
 //  Created by Mykola Buhaiov on 09.03.2023.
 //
 
+import Configuration
 import Vapor
 
-/// Extends `Application` to support custom app configuration using `AppConfigurationProtocol`.
-extension Application {
-    /// A private key used to store and retrieve the app configuration from `Application.storage`.
-    private struct AppConfigurationKey: StorageKey {
-        typealias Value = AppConfigurationProtocol
-    }
-    /// The app's custom configuration object conforming to `AppConfigurationProtocol`.
-    ///
-    /// - `get`: Returns the stored configuration. If not set, triggers a runtime crash with `fatalError`.
-    /// - `set`: Stores the configuration in `Application.storage` under the key `AppConfigurationKey`.
-    ///
-    /// This allows safely attaching a custom configuration object to the `Application` lifecycle.
-    public var appConfiguration: AppConfigurationProtocol {
-        get {
-            guard let manager = storage[AppConfigurationKey.self] else {
-                fatalError("AppConfiguration not setup.")
-            }
-            return manager
-        }
-        set {
-            storage[AppConfigurationKey.self] = newValue
-        }
+public extension Application {
+    /// `StorageKey` for ConfigReader
+    private struct ConfigReaderKey: StorageKey {
+        typealias Value = ConfigReader
     }
 
-    /// A convenience accessor for initializing a `Configure` object with the current application.
-    ///
-    /// Use this to set up or configure the app via a builder-style API.
-    public var configure: Configure {
-        .init(app: self)
+    /// Computed property for `ConfigReader` from swift-configuration
+    var configReader: ConfigReader {
+        get {
+            guard let reader = storage[ConfigReaderKey.self] else {
+                fatalError("ConfigReader not setup. Ensure `configure(_:)` has been called.")
+            }
+            return reader
+        }
+        set {
+            storage[ConfigReaderKey.self] = newValue
+        }
+    }
+}
+
+public extension Application {
+    func setupConfigReader(
+        jwksConfig: JWKSConfig?,
+        versionKey: String,
+        keys: Set<String>,
+        jsonStringKeys: Set<String>
+    ) async throws {
+        let envProvider = EnvironmentVariablesProvider()
+
+        let consulProvider = await CachedConfigProvider.consul(
+            app: self,
+            keys: keys,
+            jsonStringKeys: jsonStringKeys
+        )
+        let fileProvider = CachedConfigProvider.localFile(
+            app: self,
+            shouldLoadJWKS: jwksConfig.map { !consulProvider.hasValue(forKey: $0.key) } ?? false,
+            jwksConfig: jwksConfig,
+            versionKey: versionKey
+        )
+        configReader = ConfigReader(providers: [consulProvider, envProvider, fileProvider])
     }
 }
