@@ -5,7 +5,6 @@ import Testing
 
 @Suite("App configuration tests", .serialized)
 struct ConfigReaderTests {
-
     private func makeReader() -> ConfigReader {
         ConfigReader(
             provider: InMemoryProvider(
@@ -18,8 +17,6 @@ struct ConfigReaderTests {
             )
         )
     }
-
-    // MARK: - Int
 
     @Test("Returns int value for existing key")
     func int_value_exists() {
@@ -56,8 +53,6 @@ struct ConfigReaderTests {
         }
     }
 
-    // MARK: - String
-
     @Test("Returns string value for existing key")
     func string_value_exists() {
         let reader = makeReader()
@@ -93,8 +88,6 @@ struct ConfigReaderTests {
         }
     }
 
-    // MARK: - CSV Array
-
     @Test("Parses comma-separated string into array")
     func string_array_parsing() {
         let reader = makeReader()
@@ -124,13 +117,10 @@ struct ConfigReaderTests {
         }
     }
 
-    // MARK: - UUID
-
     @Test("Parses UUID value from provider")
     func uuid_parsing_success() {
         let reader = makeReader()
-
-        let fallback = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+        let fallback = UUID()
         let result = reader.uuid(forKey: "uuid", default: fallback)
 
         #expect(result.uuidString == "00000000-0000-0000-0000-000000000000")
@@ -139,8 +129,7 @@ struct ConfigReaderTests {
     @Test("Returns default UUID when key is missing")
     func uuid_fallback_to_default() {
         let reader = makeReader()
-
-        let fallback = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+        let fallback = UUID()
         let result = reader.uuid(forKey: "missing", default: fallback)
 
         #expect(result == fallback)
