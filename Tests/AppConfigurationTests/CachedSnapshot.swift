@@ -5,7 +5,6 @@ import Testing
 
 @Suite("CachedSnapshot")
 struct CachedSnapshotTests {
-
     @Test("Returns provider name")
     func providerName() {
         let provider = CachedConfigProvider(

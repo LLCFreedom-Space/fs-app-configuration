@@ -26,12 +26,11 @@ import Configuration
 import Vapor
 
 public extension Application {
-    /// `StorageKey` for ConfigReader
-    private struct ConfigReaderKey: StorageKey {
+    /// A storage key used to persist `ConfigReader` inside `Application.storage`.
+    private enum ConfigReaderKey: StorageKey {
         typealias Value = ConfigReader
     }
-
-    /// Computed property for `ConfigReader` from swift-configuration
+    /// The shared `ConfigReader` instance attached to the Vapor `Application`.
     var configReader: ConfigReader {
         get {
             guard let reader = storage[ConfigReaderKey.self] else {
@@ -46,25 +45,27 @@ public extension Application {
 }
 
 public extension Application {
-    func setupConfigReader(
+    /// Configures and attaches a `ConfigReader` instance to the `Application`.
+    /// - Parameters:
+    ///   - jwksConfig: Optional JWKS configuration used for secure configuration sources.
+    ///   - versionKey: A configuration key representing the application version.
+    ///   - keys: A set of configuration keys that should be preloaded or observed.
+    ///   - jsonStringKeys: A set of keys whose values are expected to be JSON strings.
+    func configureConfigReader(
         jwksConfig: JWKSConfig?,
         versionKey: String,
         keys: Set<String>,
         jsonStringKeys: Set<String>
-    ) async throws {
-        let envProvider = EnvironmentVariablesProvider()
-
-        let consulProvider = await CachedConfigProvider.consul(
-            app: self,
-            keys: keys,
-            jsonStringKeys: jsonStringKeys
+    ) async {
+        let reader = await ConfigReaderFactory.make(
+            .init(
+                app: self,
+                jwksConfig: jwksConfig,
+                versionKey: versionKey,
+                keys: keys,
+                jsonStringKeys: jsonStringKeys
+            )
         )
-        let fileProvider = CachedConfigProvider.localFile(
-            app: self,
-            shouldLoadJWKS: jwksConfig.map { !consulProvider.hasValue(forKey: $0.key) } ?? false,
-            jwksConfig: jwksConfig,
-            versionKey: versionKey
-        )
-        configReader = ConfigReader(providers: [consulProvider, envProvider, fileProvider])
+        self.configReader = reader
     }
 }

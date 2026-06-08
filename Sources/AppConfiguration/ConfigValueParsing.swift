@@ -25,6 +25,17 @@
 import Vapor
 import Configuration
 
+/// A protocol responsible for converting raw configuration values into typed `ConfigValue` objects.
 public protocol ConfigValueParsing {
-    func parseConfigValue(key: String, rawValue: String, type: ConfigType) throws -> ConfigValue
+    /// Parses a raw configuration value into a typed `ConfigValue`.
+    /// - Parameters:
+    ///   - key: The configuration key associated with the value. Used for error reporting and debugging.
+    ///   - rawValue: The raw string value retrieved from a configuration source.
+    ///   - type: The expected target type for the configuration value.
+    /// - Returns: A `ConfigValue` representing the successfully parsed value.
+    func parseConfigValue(
+        key: String,
+        rawValue: String,
+        type: ConfigType
+    ) throws -> ConfigValue
 }

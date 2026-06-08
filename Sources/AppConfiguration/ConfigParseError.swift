@@ -25,9 +25,12 @@
 import Vapor
 import Configuration
 
+/// Errors that can occur while parsing configuration values.
 public enum ConfigParseError: Error, CustomStringConvertible {
+    /// Indicates that a configuration value could not be converted to the expected type.
     case valueNotConvertible(key: String, type: ConfigType)
 
+    /// A human-readable description of the parsing error.
     public var description: String {
         switch self {
         case let .valueNotConvertible(key, type):

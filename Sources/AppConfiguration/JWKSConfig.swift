@@ -24,10 +24,16 @@
 
 import Vapor
 
+/// Configuration describing how and where to load JWKS (JSON Web Key Set) data.
 public struct JWKSConfig: Content {
+    /// The file name (or relative path) of the JWKS file on disk.
     public var fileName: String
+    /// The configuration key used to locate JWKS in remote providers.
     public var key: String
-    
+    /// Creates a new JWKS configuration.
+    /// - Parameters:
+    ///   - fileName: The local file name or path of the JWKS file.
+    ///   - key: The remote configuration key used to fetch JWKS.
     public init(fileName: String, key: String) {
         self.fileName = fileName
         self.key = key

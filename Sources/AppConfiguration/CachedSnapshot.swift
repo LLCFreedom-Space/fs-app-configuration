@@ -25,12 +25,26 @@
 import Vapor
 import Configuration
 
+/// A snapshot representation of configuration values from a `CachedConfigProvider`.
 struct CachedSnapshot: ConfigSnapshot {
+    /// Internal cached key-value storage.
     let cachedValues: [String: String]
+    /// The provider that originated this snapshot.
     let provider: CachedConfigProvider
-    var providerName: String { provider.providerName }
-
-    func value(forKey key: AbsoluteConfigKey, type: ConfigType) throws -> LookupResult {
+    /// The human-readable name of the underlying provider.
+    var providerName: String {
+        provider.providerName
+    }
+    /// Retrieves a typed configuration value from the snapshot.
+    /// - Parameters:
+    ///   - key: The absolute configuration key.
+    ///   - type: The expected configuration type.
+    /// - Returns: A `LookupResult` containing the encoded key and parsed value,
+    ///   or `nil` if the key does not exist in the snapshot.
+    func value(
+        forKey key: AbsoluteConfigKey,
+        type: ConfigType
+    ) throws -> LookupResult {
         try provider.value(forKey: key, type: type)
     }
 }

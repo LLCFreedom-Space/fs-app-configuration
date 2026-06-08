@@ -11,7 +11,7 @@ struct ConfigReaderTests {
             provider: InMemoryProvider(
                 values: [
                     "timeout": 42,
-                    "name": "Mykola",
+                    "name": "John",
                     "tags": "a, b, c",
                     "uuid": "00000000-0000-0000-0000-000000000000"
                 ]
@@ -21,25 +21,25 @@ struct ConfigReaderTests {
 
     // MARK: - Int
 
-    @Test
+    @Test("Returns int value for existing key")
     func int_value_exists() {
         let reader = makeReader()
         #expect(reader.int(forKey: "timeout") == 42)
     }
 
-    @Test
+    @Test("Returns nil when int key is missing")
     func int_missing_returns_nil() {
         let reader = makeReader()
         #expect(reader.int(forKey: "missing") == nil)
     }
 
-    @Test
+    @Test("Returns default int when key is missing")
     func int_default_value() {
         let reader = makeReader()
         #expect(reader.int(forKey: "missing", default: 10) == 10)
     }
 
-    @Test
+    @Test("requiredInt returns value for existing key")
     func required_int_success() throws {
         let reader = makeReader()
         let value = try reader.requiredInt(forKey: "timeout")
@@ -47,7 +47,7 @@ struct ConfigReaderTests {
         #expect(value == 42)
     }
 
-    @Test
+    @Test("requiredInt throws when key is missing")
     func required_int_throws() {
         let reader = makeReader()
 
@@ -58,33 +58,33 @@ struct ConfigReaderTests {
 
     // MARK: - String
 
-    @Test
+    @Test("Returns string value for existing key")
     func string_value_exists() {
         let reader = makeReader()
-        #expect(reader.string(forKey: "name") == "Mykola")
+        #expect(reader.string(forKey: "name") == "John")
     }
 
-    @Test
+    @Test("Returns nil when string key is missing")
     func string_missing_returns_nil() {
         let reader = makeReader()
         #expect(reader.string(forKey: "missing") == nil)
     }
 
-    @Test
+    @Test("Returns default string when key is missing")
     func string_default_value() {
         let reader = makeReader()
         #expect(reader.string(forKey: "missing", default: "default") == "default")
     }
 
-    @Test
+    @Test("requiredString returns value for existing key")
     func required_string_success() throws {
         let reader = makeReader()
         let value = try reader.requiredString(forKey: "name")
 
-        #expect(value == "Mykola")
+        #expect(value == "John")
     }
 
-    @Test
+    @Test("requiredString throws when key is missing")
     func required_string_throws() {
         let reader = makeReader()
 
@@ -95,19 +95,19 @@ struct ConfigReaderTests {
 
     // MARK: - CSV Array
 
-    @Test
+    @Test("Parses comma-separated string into array")
     func string_array_parsing() {
         let reader = makeReader()
         #expect(reader.stringArray(forKey: "tags") == ["a", "b", "c"])
     }
 
-    @Test
+    @Test("Returns empty array when key is missing")
     func string_array_missing_returns_empty() {
         let reader = makeReader()
         #expect(reader.stringArray(forKey: "missing").isEmpty)
     }
 
-    @Test
+    @Test("requiredStringArray returns parsed array for existing key")
     func required_string_array_success() throws {
         let reader = makeReader()
         let result = try reader.requiredStringArray(forKey: "tags")
@@ -115,7 +115,7 @@ struct ConfigReaderTests {
         #expect(result == ["a", "b", "c"])
     }
 
-    @Test
+    @Test("requiredStringArray throws when key is missing")
     func required_string_array_throws() {
         let reader = makeReader()
 
@@ -126,7 +126,7 @@ struct ConfigReaderTests {
 
     // MARK: - UUID
 
-    @Test
+    @Test("Parses UUID value from provider")
     func uuid_parsing_success() {
         let reader = makeReader()
 
@@ -136,7 +136,7 @@ struct ConfigReaderTests {
         #expect(result.uuidString == "00000000-0000-0000-0000-000000000000")
     }
 
-    @Test
+    @Test("Returns default UUID when key is missing")
     func uuid_fallback_to_default() {
         let reader = makeReader()
 

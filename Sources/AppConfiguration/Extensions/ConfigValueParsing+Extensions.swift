@@ -26,7 +26,17 @@ import Vapor
 import Configuration
 
 public extension ConfigValueParsing {
-    func parseConfigValue(key: String, rawValue: String, type: ConfigType) throws -> ConfigValue {
+    /// Parses a raw configuration string into a typed `ConfigValue`.
+    /// - Parameters:
+    ///   - key: The configuration key associated with the value (used for error reporting).
+    ///   - rawValue: The raw string value retrieved from a configuration source.
+    ///   - type: The expected type of the configuration value.
+    /// - Returns: A `ConfigValue` wrapping the parsed and typed content.
+    func parseConfigValue(
+        key: String,
+        rawValue: String,
+        type: ConfigType
+    ) throws -> ConfigValue {
         let content: ConfigContent
         switch type {
         case .string:
@@ -63,6 +73,9 @@ public extension ConfigValueParsing {
         return ConfigValue(content, isSecret: false)
     }
 
+    /// Splits a comma-separated configuration string into trimmed components.
+    /// - Parameter value: The raw comma-separated string.
+    /// - Returns: An array of trimmed string components.
     private func parseArray(_ value: String) -> [String] {
         value.split(separator: ",", omittingEmptySubsequences: false)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }

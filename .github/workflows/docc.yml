@@ -24,7 +24,7 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v4
 
-      - name: Build DocC for HealthChecks 🛠
+      - name: Build DocC for Library 🛠
         run: |
           TMP_DOCS=$(mktemp -d)
           echo "Using temporary docs folder: $TMP_DOCS"

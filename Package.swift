@@ -35,6 +35,16 @@ let package = Package(
                 .target(name: "AppConfiguration"),
                 .product(name: "VaporTesting", package: "vapor"),
             ]
-        ),
+        )
     ]
 )
+
+#if os(macOS)
+package.dependencies.append(
+    // SwiftLint integration for linting and code style enforcement.
+    .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", from: "0.63.1")
+)
+package.targets[0].plugins = (package.targets[0].plugins ?? []) + [
+    .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
+]
+#endif
