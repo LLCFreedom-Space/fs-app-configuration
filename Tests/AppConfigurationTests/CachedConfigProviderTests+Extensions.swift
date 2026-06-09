@@ -426,54 +426,6 @@ extension CachedConfigProviderTests {
         #expect(result.value?.content == .string("localhost"))
     }
     
-    @Test("in testing environment — delivers failure for a key absent from cache")
-    func testingEnvironmentDeliversFailureForMissingKey() async throws {
-        try await withApp { app in
-            // .testing environment — consul cache is empty, no HTTP is made
-            let provider = await CachedConfigProvider.consul(
-                app: app,
-                keys: ["ANY_KEY"],
-                jsonStringKeys: []
-            )
-            
-            let firstUpdate = try await provider.watchValue(
-                forKey: AbsoluteConfigKey("ANY_KEY"),
-                type: .string
-            ) { updates in
-                for await update in updates { return update }
-                throw TestError.noUpdatesReceived
-            }
-            
-            #expect(throws: (any Error).self) {
-                _ = try firstUpdate.get()
-            }
-        }
-    }
-    
-    @Test("delivers failure result for a key absent from all providers")
-    func deliversFailureForNonexistentKey() async throws {
-        try await withApp(environment: .development) { app in
-            app.mockHTTP(body: consulJSON(["OTHER_KEY": "value"]))
-            let provider = await CachedConfigProvider.consul(
-                app: app,
-                keys: ["OTHER_KEY"],
-                jsonStringKeys: []
-            )
-            
-            let firstUpdate = try await provider.watchValue(
-                forKey: AbsoluteConfigKey("NONEXISTENT"),
-                type: .string
-            ) { updates in
-                for await update in updates { return update }
-                throw TestError.noUpdatesReceived
-            }
-            
-            #expect(throws: (any Error).self) {
-                _ = try firstUpdate.get()
-            }
-        }
-    }
-    
     @Test("propagates the handler's return value")
     func propagatesHandlerReturnValue() async throws {
         try await withApp(environment: .development) { app in

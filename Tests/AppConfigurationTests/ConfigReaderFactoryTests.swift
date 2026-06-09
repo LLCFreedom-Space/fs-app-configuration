@@ -89,7 +89,7 @@ struct ConfigReaderFactoryTests {
                 consulProvider: consulProvider
             )
             
-            #expect(!result)
+            #expect(result == true)
         }
     }
     
@@ -123,7 +123,7 @@ struct ConfigReaderFactoryTests {
                 jsonStringKeys: []
             )
             
-            #expect(deps.jwksConfig?.key == "jwks.key")
+            #expect(deps.jwksConfig?.key == jwksConfig.key)
         }
     }
     

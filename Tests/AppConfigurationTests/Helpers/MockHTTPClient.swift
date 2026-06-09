@@ -14,6 +14,8 @@ final class MockHTTPClient: Client, @unchecked Sendable {
         self.eventLoop = eventLoop
         self.responder = responder
     }
+    func delegating(to eventLoop: any EventLoop) -> any Client { self }
+    
     func send(_ request: ClientRequest) -> EventLoopFuture<ClientResponse> {
         do {
             return eventLoop.makeSucceededFuture(try responder(request))
@@ -21,6 +23,4 @@ final class MockHTTPClient: Client, @unchecked Sendable {
             return eventLoop.makeFailedFuture(error)
         }
     }
-    func delegating(to eventLoop: any EventLoop) -> any Client { self }
-    func logging(to logger: Logger) -> any Client { self }
 }
