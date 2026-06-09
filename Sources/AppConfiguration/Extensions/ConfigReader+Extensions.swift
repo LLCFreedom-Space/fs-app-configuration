@@ -105,7 +105,7 @@ public extension ConfigReader {
     /// Splits a comma-separated string into trimmed components.
     /// - Parameter value: Raw comma-separated string.
     /// - Returns: Array of trimmed string components.
-    private func splitCSV(_ value: String) -> [String] {
+    func splitCSV(_ value: String) -> [String] {
         value.components(separatedBy: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
     }

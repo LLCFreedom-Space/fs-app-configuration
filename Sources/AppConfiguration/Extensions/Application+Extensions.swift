@@ -27,8 +27,8 @@ import Vapor
 
 public extension Application {
     /// A storage key used to persist `ConfigReader` inside `Application.storage`.
-    private enum ConfigReaderKey: StorageKey {
-        typealias Value = ConfigReader
+    struct ConfigReaderKey: StorageKey {
+        public typealias Value = ConfigReader
     }
     /// The shared `ConfigReader` instance attached to the Vapor `Application`.
     var configReader: ConfigReader {

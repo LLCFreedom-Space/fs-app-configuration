@@ -114,14 +114,14 @@ public extension CachedConfigProvider {
 
     /// Returns an empty cached provider with no values.
     /// - Parameter providerName: The logical name of the provider (used for debugging/logging).
-    private static func empty(providerName: String) -> Self {
+    static func empty(providerName: String) -> Self {
         Self(providerName: providerName, cachedValues: [:])
     }
 
     /// Attempts to unwrap a JSON-encoded string value.
     /// - Parameter raw: The raw string from Consul KV.
     /// - Returns: A cleaned string without extra JSON encoding or quotes.
-    private static func unwrapJSONString(_ raw: String) -> String {
+    static func unwrapJSONString(_ raw: String) -> String {
         if let data = raw.data(using: .utf8),
            let unwrapped = try? JSONDecoder().decode(String.self, from: data) {
             return unwrapped
@@ -168,7 +168,7 @@ extension CachedConfigProvider {
     ///   - app: The Vapor application providing directory paths.
     ///   - jwksFileName: Relative path to JWKS file.
     /// - Returns: JWKS content as a string, or `nil` if missing or invalid.
-    private static func loadJWKS(app: Application, jwksFileName: String) -> String? {
+    static func loadJWKS(app: Application, jwksFileName: String) -> String? {
         let path = app.directory.workingDirectory + jwksFileName
 
         guard let data = FileManager.default.contents(atPath: path) else {
@@ -188,7 +188,7 @@ extension CachedConfigProvider {
 
     /// Loads the application version from `openapi.yaml`.
     /// - Returns: Version string if found, otherwise `nil`.
-    private static func loadVersion(app: Application) -> String? {
+    static func loadVersion(app: Application) -> String? {
         let path = app.directory.publicDirectory + "openapi.yaml"
         guard let yaml = try? String(contentsOfFile: path, encoding: .utf8) else {
             app.logger.error("openapi.yaml not found", metadata: ["path": "\(path)"])

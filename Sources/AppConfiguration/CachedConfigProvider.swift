@@ -123,7 +123,7 @@ public struct CachedConfigProvider: Sendable, ConfigProvider, ConfigValueParsing
     /// Encodes an `AbsoluteConfigKey` into a string representation used internally.
     /// - Parameter key: The structured configuration key.
     /// - Returns: A hyphen-separated string representation.
-    private func encodeKey(_ key: AbsoluteConfigKey) -> String {
+    func encodeKey(_ key: AbsoluteConfigKey) -> String {
         key.components.joined(separator: "-")
     }
 }

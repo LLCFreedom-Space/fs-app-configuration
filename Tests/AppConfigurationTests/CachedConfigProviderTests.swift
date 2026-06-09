@@ -34,6 +34,5 @@ struct CachedConfigProviderTests {
         try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true)
         return path
     }
-
     let versionKey = "appVersion"
 }

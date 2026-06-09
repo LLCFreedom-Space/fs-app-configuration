@@ -269,10 +269,10 @@ extension CachedConfigProviderTests {
             providerName: "cached",
             cachedValues: [:]
         )
-
+        
         #expect(provider.providerName == "cached")
     }
-
+    
     @Test("Returns string value")
     func stringValue() throws {
         let provider = CachedConfigProvider(
@@ -281,32 +281,32 @@ extension CachedConfigProviderTests {
                 "database-host": "localhost"
             ]
         )
-
+        
         let result = try provider.value(
             forKey: AbsoluteConfigKey(["database", "host"]),
             type: .string
         )
-
+        
         #expect(result.encodedKey == "database-host")
         #expect(result.value?.content == .string("localhost"))
     }
-
+    
     @Test("Returns nil for missing key")
     func missingValue() throws {
         let provider = CachedConfigProvider(
             providerName: "cached",
             cachedValues: [:]
         )
-
+        
         let result = try provider.value(
             forKey: AbsoluteConfigKey(["database", "host"]),
             type: .string
         )
-
+        
         #expect(result.encodedKey == "database-host")
         #expect(result.value == nil)
     }
-
+    
     @Test("Parses integer value")
     func intValue() throws {
         let provider = CachedConfigProvider(
@@ -315,15 +315,15 @@ extension CachedConfigProviderTests {
                 "server-port": "8080"
             ]
         )
-
+        
         let result = try provider.value(
             forKey: AbsoluteConfigKey(["server", "port"]),
             type: .int
         )
-
+        
         #expect(result.value?.content == .int(8080))
     }
-
+    
     @Test("Parses bool value")
     func boolValue() throws {
         let provider = CachedConfigProvider(
@@ -332,15 +332,15 @@ extension CachedConfigProviderTests {
                 "feature-enabled": "true"
             ]
         )
-
+        
         let result = try provider.value(
             forKey: AbsoluteConfigKey(["feature", "enabled"]),
             type: .bool
         )
-
+        
         #expect(result.value?.content == .bool(true))
     }
-
+    
     @Test("Throws on invalid integer")
     func invalidIntThrows() {
         let provider = CachedConfigProvider(
@@ -349,7 +349,7 @@ extension CachedConfigProviderTests {
                 "server-port": "abc"
             ]
         )
-
+        
         #expect(throws: (any Error).self) {
             try provider.value(
                 forKey: AbsoluteConfigKey(["server", "port"]),
@@ -357,7 +357,7 @@ extension CachedConfigProviderTests {
             )
         }
     }
-
+    
     @Test("fetchValue delegates to value")
     func fetchValue() async throws {
         let provider = CachedConfigProvider(
@@ -366,15 +366,15 @@ extension CachedConfigProviderTests {
                 "database-host": "localhost"
             ]
         )
-
+        
         let result = try await provider.fetchValue(
             forKey: AbsoluteConfigKey(["database", "host"]),
             type: .string
         )
-
+        
         #expect(result.value?.content == .string("localhost"))
     }
-
+    
     @Test("hasValue returns true for existing key")
     func hasValueTrue() {
         let provider = CachedConfigProvider(
@@ -383,30 +383,30 @@ extension CachedConfigProviderTests {
                 "database-host": "localhost"
             ]
         )
-
+        
         #expect(provider.hasValue(forKey: "database-host"))
     }
-
+    
     @Test("hasValue returns false for missing key")
     func hasValueFalse() {
         let provider = CachedConfigProvider(
             providerName: "cached",
             cachedValues: [:]
         )
-
+        
         #expect(!provider.hasValue(forKey: "database-host"))
     }
-
+    
     @Test("hasValue returns false for nil key")
     func hasValueNil() {
         let provider = CachedConfigProvider(
             providerName: "cached",
             cachedValues: [:]
         )
-
+        
         #expect(!provider.hasValue(forKey: nil))
     }
-
+    
     @Test("Snapshot contains same provider data")
     func snapshot() throws {
         let provider = CachedConfigProvider(
@@ -415,14 +415,109 @@ extension CachedConfigProviderTests {
                 "database-host": "localhost"
             ]
         )
-
+        
         let snapshot = provider.snapshot()
-
+        
         let result = try snapshot.value(
             forKey: AbsoluteConfigKey(["database", "host"]),
             type: .string
         )
-
+        
         #expect(result.value?.content == .string("localhost"))
+    }
+    
+    @Test("in testing environment — delivers failure for a key absent from cache")
+    func testingEnvironmentDeliversFailureForMissingKey() async throws {
+        try await withApp { app in
+            // .testing environment — consul cache is empty, no HTTP is made
+            let provider = await CachedConfigProvider.consul(
+                app: app,
+                keys: ["ANY_KEY"],
+                jsonStringKeys: []
+            )
+            
+            let firstUpdate = try await provider.watchValue(
+                forKey: AbsoluteConfigKey("ANY_KEY"),
+                type: .string
+            ) { updates in
+                for await update in updates { return update }
+                throw TestError.noUpdatesReceived
+            }
+            
+            #expect(throws: (any Error).self) {
+                _ = try firstUpdate.get()
+            }
+        }
+    }
+    
+    @Test("delivers failure result for a key absent from all providers")
+    func deliversFailureForNonexistentKey() async throws {
+        try await withApp(environment: .development) { app in
+            app.mockHTTP(body: consulJSON(["OTHER_KEY": "value"]))
+            let provider = await CachedConfigProvider.consul(
+                app: app,
+                keys: ["OTHER_KEY"],
+                jsonStringKeys: []
+            )
+            
+            let firstUpdate = try await provider.watchValue(
+                forKey: AbsoluteConfigKey("NONEXISTENT"),
+                type: .string
+            ) { updates in
+                for await update in updates { return update }
+                throw TestError.noUpdatesReceived
+            }
+            
+            #expect(throws: (any Error).self) {
+                _ = try firstUpdate.get()
+            }
+        }
+    }
+    
+    @Test("propagates the handler's return value")
+    func propagatesHandlerReturnValue() async throws {
+        try await withApp(environment: .development) { app in
+            app.mockHTTP(body: consulJSON(["PORT": "8080"]))
+            let provider = await CachedConfigProvider.consul(
+                app: app,
+                keys: ["PORT"],
+                jsonStringKeys: []
+            )
+            
+            let updatesReceived = try await provider.watchValue(
+                forKey: AbsoluteConfigKey("PORT"),
+                type: .string
+            ) { updates in
+                var count = 0
+                for await _ in updates {
+                    count += 1
+                    return count   // exit after first update
+                }
+                return count
+            }
+            
+            #expect(updatesReceived == 1)
+        }
+    }
+    
+    @Test("propagates the handler's return value")
+    func propagatesHandlerReturnValueFalse() async throws {
+        try await withApp { app in
+            let provider = await CachedConfigProvider.consul(
+                app: app,
+                keys: [],
+                jsonStringKeys: []
+            )
+            
+            let received = try await provider.watchSnapshot { updates in
+                for await _ in updates { return true }
+                return false
+            }
+            
+            #expect(received)
+        }
+    }
+    enum TestError: Error {
+        case noUpdatesReceived
     }
 }

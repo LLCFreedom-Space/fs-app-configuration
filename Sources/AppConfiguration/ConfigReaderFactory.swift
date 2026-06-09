@@ -76,7 +76,7 @@ public enum ConfigReaderFactory {
     ///   - jwksConfig: Optional JWKS configuration.
     ///   - consulProvider: The already-initialized Consul configuration provider.
     /// - Returns: `true` if JWKS should be loaded from local files, otherwise `false`.
-    private static func shouldLoadJWKS(
+    static func shouldLoadJWKS(
         jwksConfig: JWKSConfig?,
         consulProvider: CachedConfigProvider
     ) -> Bool {

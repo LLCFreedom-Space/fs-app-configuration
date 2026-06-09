@@ -5,7 +5,7 @@ import Testing
 
 @Suite("App configuration tests", .serialized)
 struct ConfigReaderTests {
-    private func makeReader() -> ConfigReader {
+    func makeReader() -> ConfigReader {
         ConfigReader(
             provider: InMemoryProvider(
                 values: [

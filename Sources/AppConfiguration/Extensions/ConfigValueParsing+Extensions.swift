@@ -76,7 +76,7 @@ public extension ConfigValueParsing {
     /// Splits a comma-separated configuration string into trimmed components.
     /// - Parameter value: The raw comma-separated string.
     /// - Returns: An array of trimmed string components.
-    private func parseArray(_ value: String) -> [String] {
+    func parseArray(_ value: String) -> [String] {
         value.split(separator: ",", omittingEmptySubsequences: false)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
     }
