@@ -5,8 +5,8 @@ import Configuration
 
 @Suite("CachedConfigProvider")
 struct CachedConfigProviderTests {
-    private let databaseHostKey = AbsoluteConfigKey(["database", "host"])
-    private let versionKey = "appVersion"
+    let databaseHostKey = AbsoluteConfigKey(["database", "host"])
+    let versionKey = "appVersion"
 
     @Test(".testing — returns empty provider without making an HTTP request")
     func testingEnvironmentReturnsEmpty() async throws {

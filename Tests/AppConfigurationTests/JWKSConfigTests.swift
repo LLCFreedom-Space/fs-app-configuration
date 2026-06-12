@@ -34,7 +34,6 @@ struct JWKSConfigTests {
     func inequalityWhenBothFieldsDiffer() {
         let lhs = JWKSConfig(fileName: "a.json", key: "a")
         let rhs = JWKSConfig(fileName: "b.json", key: "b")
-
         #expect(lhs != rhs)
     }
 
@@ -42,7 +41,6 @@ struct JWKSConfigTests {
     func equalityIsSymmetric() {
         let a = JWKSConfig(fileName: "jwks.json", key: "key-1")
         let b = JWKSConfig(fileName: "jwks.json", key: "key-1")
-
         #expect(a == b)
         #expect(b == a)
     }

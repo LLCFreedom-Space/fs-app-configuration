@@ -6,16 +6,15 @@ import Configuration
 // MARK: - App lifecycle
 func withApp(
     environment: Environment = .testing,
-    body: (Application) async throws -> Void
+    test: (Application) async throws -> Void
 ) async throws {
     let app = try await Application.make(environment)
-    do {
-        try await body(app)
-    } catch {
-        try await app.asyncShutdown()
-        throw error
+    defer {
+        Task {
+            try? await app.asyncShutdown()
+        }
     }
-    try await app.asyncShutdown()
+    try await test(app)
 }
 
 // MARK: - Consul
