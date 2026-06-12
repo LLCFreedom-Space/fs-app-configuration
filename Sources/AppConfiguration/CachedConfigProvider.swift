@@ -27,6 +27,7 @@ import Configuration
 
 /// A cached in-memory configuration provider.
 public struct CachedConfigProvider: Sendable, ConfigProvider, ConfigValueParsing {
+    public static let shared = CachedConfigProvider(providerName: "SharedCachedConfigProvider", cachedValues: [:])
     /// The logical name of the configuration provider (e.g. `"Consul"`, `"LocalFile"`).
     public let providerName: String
     /// Internal cache of configuration values.

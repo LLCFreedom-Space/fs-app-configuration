@@ -52,14 +52,13 @@ public extension Application {
     ///   - keys: A set of configuration keys that should be preloaded or observed.
     ///   - jsonStringKeys: A set of keys whose values are expected to be JSON strings.
     func configureConfigReader(
-        jwksConfig: JWKSConfig?,
-        versionKey: String?,
-        keys: Set<String>,
-        jsonStringKeys: Set<String>
+        jwksConfig: JWKSConfig? = nil,
+        versionKey: String? = nil,
+        keys: Set<String> = [],
+        jsonStringKeys: Set<String> = []
     ) async {
         let envProvider = EnvironmentVariablesProvider()
-        let cachedConfigProvider = CachedConfigProvider(providerName: "CachedConfigProvider", cachedValues: [:])
-        let consulProvider = await cachedConfigProvider.consul(
+        let consulProvider = await CachedConfigProvider.shared.consul(
             app: self,
             keys: keys,
             jsonStringKeys: jsonStringKeys
@@ -68,7 +67,7 @@ public extension Application {
             jwksConfig: jwksConfig,
             consulProvider: consulProvider
         )
-        let fileProvider = cachedConfigProvider.localFile(
+        let fileProvider = CachedConfigProvider.shared.localFile(
             app: self,
             shouldLoadJWKS: shouldLoadJWKS,
             jwksConfig: jwksConfig,
