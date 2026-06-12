@@ -4,6 +4,8 @@ import Vapor
 
 @Suite("Application.configReader tests", .serialized)
 struct ApplicationConfigReaderTests {
+    private let versionKey = "appVersion"
+
     @Test("Getter returns the reader set via setter")
     func setterGetterRoundTrip() async throws {
         setenv("RT_KEY", "rt-value", 1)

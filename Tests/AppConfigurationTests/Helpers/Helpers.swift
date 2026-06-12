@@ -41,11 +41,6 @@ func makeConsulProvider(
     keys: Set<String> = [],
     jsonStringKeys: Set<String> = []
 ) async -> CachedConfigProvider {
-    let cachedConfigProvider = CachedConfigProvider(providerName: "CachedConfigProvider", cachedValues: [:])
+    let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
     return await cachedConfigProvider.consul(app: app, keys: keys, jsonStringKeys: jsonStringKeys)
 }
-
-// MARK: - Constants
-let versionKey = "appVersion"
-
-let databaseHostKey = AbsoluteConfigKey(["database", "host"])

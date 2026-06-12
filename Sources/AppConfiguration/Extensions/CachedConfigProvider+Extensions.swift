@@ -40,7 +40,7 @@ public extension CachedConfigProvider {
         jsonStringKeys: Set<String>
     ) async -> Self {
         guard app.environment != .testing else {
-            return Self(providerName: "Consul", cachedValues: [:])
+            return Self(providerName: #function, cachedValues: [:])
         }
         
         let consulUrl = Environment.process.CONSUL_URL ?? "http://127.0.0.1:8500"
@@ -59,17 +59,17 @@ public extension CachedConfigProvider {
                 app.logger.warning("ConsulHTTPClient: unexpected status", metadata: [
                     "status": "\(response.status.code)"
                 ])
-                return .empty(providerName: "Consul")
+                return .empty(providerName: #function)
             }
             
             guard var body = response.body else {
                 app.logger.warning("ConsulHTTPClient: empty response body")
-                return .empty(providerName: "Consul")
+                return .empty(providerName: #function)
             }
             
             guard let data = body.readData(length: body.readableBytes) else {
                 app.logger.warning("ConsulHTTPClient: failed to read body bytes")
-                return .empty(providerName: "Consul")
+                return .empty(providerName: #function)
             }
             
             let entries = try JSONDecoder().decode([ConsulKeyValueResponse].self, from: data)
@@ -102,13 +102,13 @@ public extension CachedConfigProvider {
             
             dictionary["missing-keys"] = missingKeys
             
-            return Self(providerName: "Consul", cachedValues: dictionary)
+            return Self(providerName: #function, cachedValues: dictionary)
         } catch let error as DecodingError {
             app.logger.error("ConsulHTTPClient: failed to decode KV response", error: error)
-            return .empty(providerName: "Consul")
+            return .empty(providerName: #function)
         } catch {
             app.logger.warning("ConsulHTTPClient: KV fetch failed", error: error)
-            return .empty(providerName: "Consul")
+            return .empty(providerName: #function)
         }
     }
     
@@ -152,17 +152,17 @@ public extension CachedConfigProvider {
         if shouldLoadJWKS, let jwksConfig {
             values[jwksConfig.key] = loadJWKS(app: app, jwksFileName: jwksConfig.fileName)
             
-            app.logger.debug("LocalFile: loaded JWKS", metadata: [
+            app.logger.debug("\(#function)", metadata: [
                 "jwksLoaded": "\(values[jwksConfig.key] != nil)"
             ])
         }
         if let versionKey {
             values[versionKey] = loadVersion(app: app)
-            app.logger.debug("\(#function): loaded values", metadata: [
+            app.logger.debug("\(#function)", metadata: [
                 "version": "\(String(describing: values[versionKey]))"
             ])
         }
-        return Self(providerName: "LocalFile", cachedValues: values)
+        return Self(providerName: #function, cachedValues: values)
     }
     
     /// Loads a JWKS file from disk.
@@ -183,8 +183,6 @@ public extension CachedConfigProvider {
             app.logger.error("JWKS file is empty or unreadable", metadata: ["path": "\(path)"])
             return nil
         }
-        
-        app.logger.debug("JWKS loaded from '\(path)'")
         return content
     }
     
@@ -202,7 +200,6 @@ public extension CachedConfigProvider {
             app.logger.warning("Version not found in openapi.yaml")
             return nil
         }
-        app.logger.debug("Version: \(version)")
         return String(version)
     }
 }

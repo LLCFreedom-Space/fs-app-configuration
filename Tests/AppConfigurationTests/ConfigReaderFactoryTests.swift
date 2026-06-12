@@ -5,8 +5,6 @@ import Testing
 
 @Suite("ConfigReaderFactory")
 struct ConfigReaderFactoryTests {
-    // MARK: - ShouldLoadJWKS
-
     @Test("Returns false when jwksConfig is nil")
     func returnsFalseWhenJWKSConfigIsNil() async throws {
         try await withApp { app in
@@ -35,12 +33,11 @@ struct ConfigReaderFactoryTests {
         try await withApp(environment: .development) { app in
             let jwksConfig = JWKSConfig(fileName: "jwks.public.key", key: "path/jwks.json")
             app.mockClientRequest(body: consulJSON([jwksConfig.key: "eyJrZXlzIjpbXX0="]))
-
+            let cachedConfigProvider = CachedConfigProvider(providerName: #function, cachedValues: [jwksConfig.key: "eyJrZXlzIjpbXX0="])
             let result = app.shouldLoadJWKS(
                 jwksConfig: jwksConfig,
-                consulProvider: await makeConsulProvider(app: app, keys: [jwksConfig.key])
+                consulProvider: cachedConfigProvider
             )
-
             #expect(result == false)
         }
     }
