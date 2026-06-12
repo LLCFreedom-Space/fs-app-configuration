@@ -43,6 +43,6 @@ struct CachedSnapshotTests {
 
     // MARK: - Helpers
     private func makeSnapshot(cachedValues: [String: String] = [:]) -> any ConfigSnapshot {
-        CachedConfigProvider(providerName: #file, cachedValues: cachedValues).snapshot()
+        CachedConfigProvider(providerName: "cached", cachedValues: cachedValues).snapshot()
     }
 }

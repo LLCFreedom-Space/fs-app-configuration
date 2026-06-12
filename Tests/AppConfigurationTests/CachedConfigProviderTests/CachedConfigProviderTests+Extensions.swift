@@ -232,6 +232,6 @@ extension CachedConfigProviderTests {
 
     // MARK: - Helpers
     private func makeProvider(cachedValues: [String: String] = [:]) -> CachedConfigProvider {
-        CachedConfigProvider(providerName: #file, cachedValues: cachedValues)
+        CachedConfigProvider(providerName: "cached", cachedValues: cachedValues)
     }
 }
