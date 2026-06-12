@@ -146,7 +146,7 @@ public extension CachedConfigProvider {
         app: Application,
         shouldLoadJWKS: Bool,
         jwksConfig: JWKSConfig?,
-        versionKey: String
+        versionKey: String?
     ) -> Self {
         var values: [String: String] = [:]
         if shouldLoadJWKS, let jwksConfig {
@@ -156,10 +156,12 @@ public extension CachedConfigProvider {
                 "jwksLoaded": "\(values[jwksConfig.key] != nil)"
             ])
         }
-        values[versionKey] = loadVersion(app: app)
-        app.logger.debug("\(#function): loaded values", metadata: [
-            "version": "\(String(describing: values[versionKey]))"
-        ])
+        if let versionKey {
+            values[versionKey] = loadVersion(app: app)
+            app.logger.debug("\(#function): loaded values", metadata: [
+                "version": "\(String(describing: values[versionKey]))"
+            ])
+        }
         return Self(providerName: "LocalFile", cachedValues: values)
     }
     

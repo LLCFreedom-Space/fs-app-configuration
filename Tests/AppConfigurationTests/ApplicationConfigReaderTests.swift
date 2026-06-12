@@ -7,7 +7,6 @@ struct ApplicationConfigReaderTests {
     @Test("Getter returns the reader set via setter")
     func setterGetterRoundTrip() async throws {
         setenv("RT_KEY", "rt-value", 1)
-        defer { unsetenv("RT_KEY") }
 
         try await withApp { app in
             await configure(app: app)
@@ -20,7 +19,6 @@ struct ApplicationConfigReaderTests {
     @Test("Getter is idempotent after registration")
     func getterIsIdempotentAfterSetup() async throws {
         setenv("IDEMPOTENT_KEY", "stable", 1)
-        defer { unsetenv("IDEMPOTENT_KEY") }
 
         try await withApp { app in
             await configure(app: app)
@@ -31,8 +29,7 @@ struct ApplicationConfigReaderTests {
 
     @Test("Registers reader with non-empty keys and JSON string keys")
     func nonEmptyKeysSets() async throws {
-        setenv("db-host", "postgres.local", 1)
-        defer { unsetenv("db-host") }
+        setenv("DB_HOST", "postgres.local", 1)
 
         try await withApp { app in
             await configure(
@@ -66,13 +63,12 @@ struct ApplicationConfigReaderTests {
 
     @Test("Reconfiguring replaces the previously registered reader")
     func reconfigurationOverwritesPreviousReader() async throws {
-        setenv("newKey", "new-value", 1)
-        defer { unsetenv("newKey") }
+        setenv("NEW_KEY", "new-value", 1)
 
         try await withApp { app in
             await configure(app: app, versionKey: "v1", keys: ["oldKey"])
             await configure(app: app, versionKey: "v2", keys: ["newKey"], jsonStringKeys: ["newJsonKey"])
-            #expect(app.configReader.string(forKey: "newKey") == "new-value")
+            #expect(app.configReader.string(forKey: "new-key") == "new-value")
         }
     }
 
@@ -85,7 +81,7 @@ struct ApplicationConfigReaderTests {
         keys: Set<String> = [],
         jsonStringKeys: Set<String> = []
     ) async {
-        await app.configureConfigReader(
+       await app.configureConfigReader(
             jwksConfig: jwksConfig,
             versionKey: versionKey,
             keys: keys,

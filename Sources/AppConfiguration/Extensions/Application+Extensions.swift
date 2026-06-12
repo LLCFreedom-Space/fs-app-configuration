@@ -53,19 +53,48 @@ public extension Application {
     ///   - jsonStringKeys: A set of keys whose values are expected to be JSON strings.
     func configureConfigReader(
         jwksConfig: JWKSConfig?,
-        versionKey: String,
+        versionKey: String?,
         keys: Set<String>,
         jsonStringKeys: Set<String>
     ) async {
-        let reader = await ConfigReaderFactory.make(
-            .init(
-                app: self,
-                jwksConfig: jwksConfig,
-                versionKey: versionKey,
-                keys: keys,
-                jsonStringKeys: jsonStringKeys
-            )
+        let envProvider = EnvironmentVariablesProvider()
+        let cachedConfigProvider = CachedConfigProvider(providerName: "CachedConfigProvider", cachedValues: [:])
+        let consulProvider = await cachedConfigProvider.consul(
+            app: self,
+            keys: keys,
+            jsonStringKeys: jsonStringKeys
         )
-        self.configReader = reader
+        let shouldLoadJWKS = shouldLoadJWKS(
+            jwksConfig: jwksConfig,
+            consulProvider: consulProvider
+        )
+        let fileProvider = cachedConfigProvider.localFile(
+            app: self,
+            shouldLoadJWKS: shouldLoadJWKS,
+            jwksConfig: jwksConfig,
+            versionKey: versionKey
+        )
+        self.configReader = ConfigReader(
+            providers: [
+                consulProvider,
+                envProvider,
+                fileProvider
+            ]
+        )
+    }
+    
+    /// Determines whether JWKS should be loaded from local files instead of Consul.
+    /// - Parameters:
+    ///   - jwksConfig: Optional JWKS configuration.
+    ///   - consulProvider: The already-initialized Consul configuration provider.
+    /// - Returns: `true` if JWKS should be loaded from local files, otherwise `false`.
+    func shouldLoadJWKS(
+        jwksConfig: JWKSConfig?,
+        consulProvider: CachedConfigProvider
+    ) -> Bool {
+        guard let jwksConfig else {
+            return false
+        }
+        return !consulProvider.hasValue(forKey: jwksConfig.key)
     }
 }
