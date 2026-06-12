@@ -2,115 +2,94 @@ import Testing
 import Vapor
 @testable import AppConfiguration
 
-@Suite("Application.configReader tests")
+@Suite("Application.configReader tests", .serialized)
 struct ApplicationConfigReaderTests {
     @Test("Getter returns the reader set via setter")
     func setterGetterRoundTrip() async throws {
-        try await withApp { app in
-            await app.configureConfigReader(
-                jwksConfig: nil,
-                versionKey: versionKey,
-                keys: [],
-                jsonStringKeys: []
-            )
+        setenv("RT_KEY", "rt-value", 1)
+        defer { unsetenv("RT_KEY") }
 
+        try await withApp { app in
+            await configure(app: app)
             let reader = app.configReader
             app.configReader = reader
-            _ = app.configReader
+            #expect(app.configReader.string(forKey: "RT_KEY") == "rt-value")
         }
     }
 
     @Test("Getter is idempotent after registration")
     func getterIsIdempotentAfterSetup() async throws {
+        setenv("IDEMPOTENT_KEY", "stable", 1)
+        defer { unsetenv("IDEMPOTENT_KEY") }
+
         try await withApp { app in
-            await app.configureConfigReader(
-                jwksConfig: nil,
-                versionKey: versionKey,
-                keys: [],
-                jsonStringKeys: []
-            )
-
-            _ = app.configReader
-            _ = app.configReader
-        }
-    }
-
-    @Test("Registers reader with nil JWKS config and empty key collections")
-    func nilJwksAndEmptyKeys() async throws {
-        try await withApp { app in
-            await app.configureConfigReader(
-                jwksConfig: nil,
-                versionKey: versionKey,
-                keys: [],
-                jsonStringKeys: []
-            )
-
-            _ = app.configReader
+            await configure(app: app)
+            #expect(app.configReader.string(forKey: "IDEMPOTENT_KEY") == "stable")
+            #expect(app.configReader.string(forKey: "IDEMPOTENT_KEY") == "stable")
         }
     }
 
     @Test("Registers reader with non-empty keys and JSON string keys")
     func nonEmptyKeysSets() async throws {
-        try await withApp { app in
-            await app.configureConfigReader(
-                jwksConfig: nil,
-                versionKey: versionKey,
-                keys: ["dbHost", "dbPort", "redisURL"],
-                jsonStringKeys: ["featureFlags", "rateLimits"]
-            )
+        setenv("db-host", "postgres.local", 1)
+        defer { unsetenv("db-host") }
 
-            _ = app.configReader
+        try await withApp { app in
+            await configure(
+                app: app,
+                keys: ["db-host", "db-port", "redisURL"],
+                jsonStringKeys: ["feature-flags", "rateLimits"]
+            )
+            #expect(app.configReader.string(forKey: "db-host") == "postgres.local")
         }
     }
 
     @Test("Registers reader with a custom version key")
     func customVersionKey() async throws {
         try await withApp { app in
-            await app.configureConfigReader(
-                jwksConfig: nil,
-                versionKey: "service/version",
-                keys: [],
-                jsonStringKeys: []
-            )
-
-            _ = app.configReader
+            await configure(app: app, versionKey: "service/version")
+            #expect(app.configReader.string(forKey: "NONEXISTENT") == nil)
         }
     }
 
     @Test("Registers reader with JWKS configuration")
     func withJWKSConfig() async throws {
         try await withApp { app in
-            let jwks = JWKSConfig(fileName: "", key: "")
-
-            await app.configureConfigReader(
-                jwksConfig: jwks,
-                versionKey: versionKey,
-                keys: ["secureKey"],
-                jsonStringKeys: []
+            await configure(
+                app: app,
+                jwksConfig: JWKSConfig(fileName: "", key: ""),
+                keys: ["secureKey"]
             )
-
-            _ = app.configReader
+            #expect(app.configReader.string(forKey: "NONEXISTENT") == nil)
         }
     }
 
     @Test("Reconfiguring replaces the previously registered reader")
     func reconfigurationOverwritesPreviousReader() async throws {
+        setenv("newKey", "new-value", 1)
+        defer { unsetenv("newKey") }
+
         try await withApp { app in
-            await app.configureConfigReader(
-                jwksConfig: nil,
-                versionKey: "v1",
-                keys: ["oldKey"],
-                jsonStringKeys: []
-            )
-
-            await app.configureConfigReader(
-                jwksConfig: nil,
-                versionKey: "v2",
-                keys: ["newKey"],
-                jsonStringKeys: ["newJsonKey"]
-            )
-
-            _ = app.configReader
+            await configure(app: app, versionKey: "v1", keys: ["oldKey"])
+            await configure(app: app, versionKey: "v2", keys: ["newKey"], jsonStringKeys: ["newJsonKey"])
+            #expect(app.configReader.string(forKey: "newKey") == "new-value")
         }
+    }
+
+    // MARK: - Helpers
+
+    private func configure(
+        app: Application,
+        jwksConfig: JWKSConfig? = nil,
+        versionKey: String = "version-key",
+        keys: Set<String> = [],
+        jsonStringKeys: Set<String> = []
+    ) async {
+        await app.configureConfigReader(
+            jwksConfig: jwksConfig,
+            versionKey: versionKey,
+            keys: keys,
+            jsonStringKeys: jsonStringKeys
+        )
     }
 }

@@ -4,9 +4,16 @@ import Testing
 import Configuration
 
 extension Application {
-    func mockHTTP(status: HTTPResponseStatus = .ok, body: String? = nil) {
+    func mockClientRequest(
+        status: HTTPResponseStatus = .ok,
+        body: String? = nil,
+        error: Error? = nil
+    ) {
         clients.use { app in
             MockHTTPClient(eventLoop: app.eventLoopGroup.any()) { _ in
+                if let error {
+                    throw error
+                }
                 var response = ClientResponse()
                 response.status = status
                 if let body {
@@ -16,12 +23,6 @@ extension Application {
                 }
                 return response
             }
-        }
-    }
-
-    func mockHTTP(throwing error: Error) {
-        clients.use { app in
-            MockHTTPClient(eventLoop: app.eventLoopGroup.any()) { _ in throw error }
         }
     }
 }

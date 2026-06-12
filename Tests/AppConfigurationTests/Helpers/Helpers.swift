@@ -1,4 +1,7 @@
-import Vapor
+@testable import AppConfiguration
+import VaporTesting
+import Testing
+import Configuration
 
 // MARK: - App lifecycle
 func withApp(
@@ -33,5 +36,16 @@ func createTemporaryDirectory() throws -> String {
     return path
 }
 
+func makeConsulProvider(
+    app: Application,
+    keys: Set<String> = [],
+    jsonStringKeys: Set<String> = []
+) async -> CachedConfigProvider {
+    let cachedConfigProvider = CachedConfigProvider(providerName: "CachedConfigProvider", cachedValues: [:])
+    return await cachedConfigProvider.consul(app: app, keys: keys, jsonStringKeys: jsonStringKeys)
+}
+
 // MARK: - Constants
 let versionKey = "appVersion"
+
+let databaseHostKey = AbsoluteConfigKey(["database", "host"])

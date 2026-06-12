@@ -5,219 +5,140 @@ import Testing
 
 @Suite("ConfigReaderFactory")
 struct ConfigReaderFactoryTests {
-    func withApp(
-        environment: Environment = .testing,
-        body: (Application) async throws -> Void
-    ) async throws {
-        let app = try await Application.make(environment)
-        do {
-            try await body(app)
-        } catch {
-            try await app.asyncShutdown()
-            throw error
-        }
-        try await app.asyncShutdown()
-    }
-    
-    /// Builds a Consul KV JSON array response from key→string value pairs.
-    /// Value is base64-encoded; Key is the full path (the last component becomes the dictionary key).
-    func consulJSON(_ pairs: KeyValuePairs<String, String>) -> String {
-        "[" + pairs.map { key, value in
-            let b64 = Data(value.utf8).base64EncodedString()
-            return #"{"Key":"config/server/\#(key)","Value":"\#(b64)"}"#
-        }.joined(separator: ",") + "]"
-    }
-    
-    func createTemporaryDirectory() throws -> String {
-        let path = (NSTemporaryDirectory() as NSString)
-            .appendingPathComponent(UUID().uuidString) + "/"
-        try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true)
-        return path
-    }
-    
-    @Test("returns false when jwksConfig is nil")
+    // MARK: - ShouldLoadJWKS
+
+    @Test("Returns false when jwksConfig is nil")
     func returnsFalseWhenJWKSConfigIsNil() async throws {
         try await withApp { app in
-            let consulProvider = await CachedConfigProvider.consul(
-                app: app,
-                keys: [],
-                jsonStringKeys: []
-            )
             let result = ConfigReaderFactory.shouldLoadJWKS(
                 jwksConfig: nil,
-                consulProvider: consulProvider
+                consulProvider: await makeConsulProvider(app: app)
             )
-            #expect(!result)
+            #expect(result == false)
         }
     }
-    
-    @Test("returns true when jwksConfig is set but key is absent from consul")
+
+    @Test("Returns true when jwksConfig is set but key is absent from consul")
     func returnsTrueWhenConsulLacksJWKSKey() async throws {
         try await withApp { app in
-            // .testing environment — consul cache is empty, no HTTP is made
-            let consulProvider = await CachedConfigProvider.consul(
-                app: app,
-                keys: [],
-                jsonStringKeys: []
-            )
-            let jwksConfig = JWKSConfig(fileName: "jwks.public.key", key: "/path/jwks.json")
-            
+            let jwksConfig = JWKSConfig(fileName: "jwks.public.key", key: "path/jwks.json")
             let result = ConfigReaderFactory.shouldLoadJWKS(
                 jwksConfig: jwksConfig,
-                consulProvider: consulProvider
+                consulProvider: await makeConsulProvider(app: app)
             )
-            
-            #expect(result)
-        }
-    }
-    
-    @Test("returns false when jwksConfig is set and consul contains the key")
-    func returnsFalseWhenConsulContainsJWKSKey() async throws {
-        try await withApp(environment: .development) { app in
-            let jwksKey = "jwks.public.key"
-            app.mockHTTP(body: consulJSON([jwksKey: "eyJrZXlzIjpbXX0="]))
-            
-            let consulProvider = await CachedConfigProvider.consul(
-                app: app,
-                keys: [jwksKey],
-                jsonStringKeys: []
-            )
-            let jwksConfig = JWKSConfig(fileName: jwksKey, key: "/path/jwks.json")
-            
-            let result = ConfigReaderFactory.shouldLoadJWKS(
-                jwksConfig: jwksConfig,
-                consulProvider: consulProvider
-            )
-            
             #expect(result == true)
         }
     }
-    
-    @Test("stores all fields when jwksConfig is nil")
+
+    @Test("Returns false when jwksConfig is set and consul contains the key")
+    func returnsFalseWhenConsulContainsJWKSKey() async throws {
+        try await withApp(environment: .development) { app in
+            let jwksConfig = JWKSConfig(fileName: "jwks.public.key", key: "path/jwks.json")
+            app.mockClientRequest(body: consulJSON([jwksConfig.key: "eyJrZXlzIjpbXX0="]))
+
+            let result = ConfigReaderFactory.shouldLoadJWKS(
+                jwksConfig: jwksConfig,
+                consulProvider: await makeConsulProvider(app: app, keys: [jwksConfig.key])
+            )
+
+            #expect(result == false)
+        }
+    }
+
+    // MARK: - Dependencies
+
+    @Test("Stores all fields when jwksConfig is nil")
     func storesAllFieldsWithoutJWKSConfig() async throws {
         try await withApp { app in
-            let deps = ConfigReaderFactory.Dependencies(
+            let deps = makeDeps(
                 app: app,
-                jwksConfig: nil,
                 versionKey: "app.version",
                 keys: ["consul.key.a", "consul.key.b"],
                 jsonStringKeys: ["json.key"]
             )
-            
             #expect(deps.versionKey == "app.version")
             #expect(deps.keys == ["consul.key.a", "consul.key.b"])
             #expect(deps.jsonStringKeys == ["json.key"])
             #expect(deps.jwksConfig == nil)
         }
     }
-    
-    @Test("stores jwksConfig when provided")
+
+    @Test("Stores jwksConfig when provided")
     func storesJWKSConfig() async throws {
         try await withApp { app in
             let jwksConfig = JWKSConfig(fileName: "jwks.key", key: "/etc/jwks.json")
-            let deps = ConfigReaderFactory.Dependencies(
-                app: app,
-                jwksConfig: jwksConfig,
-                versionKey: "ver",
-                keys: [],
-                jsonStringKeys: []
-            )
-            
-            #expect(deps.jwksConfig?.key == jwksConfig.key)
+            #expect(makeDeps(app: app, jwksConfig: jwksConfig).jwksConfig == jwksConfig)
         }
     }
-    
-    @Test("allows empty key sets")
+
+    @Test("Allows empty key sets")
     func allowsEmptyKeySets() async throws {
         try await withApp { app in
-            let deps = ConfigReaderFactory.Dependencies(
-                app: app,
-                jwksConfig: nil,
-                versionKey: "version",
-                keys: [],
-                jsonStringKeys: []
-            )
-            
+            let deps = makeDeps(app: app)
             #expect(deps.keys.isEmpty)
             #expect(deps.jsonStringKeys.isEmpty)
         }
     }
-    
-    @Test("make returns a usable reader when jwksConfig is nil")
+
+    // MARK: - make
+
+    @Test("Make returns a usable reader when jwksConfig is nil")
     func makeReturnsUsableReaderWithoutJWKSConfig() async throws {
         try await withApp { app in
-            let deps = ConfigReaderFactory.Dependencies(
-                app: app,
-                jwksConfig: nil,
-                versionKey: "app.version",
-                keys: [],
-                jsonStringKeys: []
-            )
-            
-            let reader = await ConfigReaderFactory.make(deps)
-            
+            let reader = await ConfigReaderFactory.make(makeDeps(app: app))
             #expect(reader.string(forKey: "NONEXISTENT_KEY") == nil)
         }
     }
-    
-    @Test("consul value takes priority over environment variable")
-    func consulTakesPriorityOverEnvVariable() async throws {
-        setenv("PRIORITY_KEY", "env-value", 1)
-        defer { unsetenv("PRIORITY_KEY") }
-        
-        try await withApp(environment: .development) { app in
-            app.mockHTTP(body: consulJSON(["PRIORITY_KEY": "consul-value"]))
-            
-            let deps = ConfigReaderFactory.Dependencies(
-                app: app,
-                jwksConfig: nil,
-                versionKey: "app.version",
-                keys: ["PRIORITY_KEY"],
-                jsonStringKeys: []
-            )
-            
-            let reader = await ConfigReaderFactory.make(deps)
-            
-            #expect(reader.string(forKey: "PRIORITY_KEY") == "consul-value")
-        }
-    }
-    
-    @Test("make returns a usable reader when jwksConfig is provided and consul is empty")
+
+    @Test("Make returns a usable reader when jwksConfig is provided and consul is empty")
     func makeReturnsUsableReaderWithJWKSConfig() async throws {
         try await withApp { app in
             let jwksConfig = JWKSConfig(fileName: "jwks.public.key", key: "/etc/jwks.json")
-            let deps = ConfigReaderFactory.Dependencies(
-                app: app,
-                jwksConfig: jwksConfig,
-                versionKey: "app.version",
-                keys: [],
-                jsonStringKeys: []
-            )
-            
-            let reader = await ConfigReaderFactory.make(deps)
-            
+            let reader = await ConfigReaderFactory.make(makeDeps(app: app, jwksConfig: jwksConfig))
             #expect(reader.string(forKey: "NONEXISTENT_KEY") == nil)
         }
     }
-    
-    @Test("env provider reads values from process environment")
+
+    @Test("Consul value takes priority over environment variable")
+    func consulTakesPriorityOverEnvVariable() async throws {
+        setenv("PRIORITY_KEY", "env-value", 1)
+        defer { unsetenv("PRIORITY_KEY") }
+
+        try await withApp(environment: .development) { app in
+            app.mockClientRequest(body: consulJSON(["PRIORITY_KEY": "consul-value"]))
+            let reader = await ConfigReaderFactory.make(
+                makeDeps(app: app, keys: ["PRIORITY_KEY"])
+            )
+            #expect(reader.string(forKey: "PRIORITY_KEY") == "consul-value")
+        }
+    }
+
+    @Test("Env provider reads values from process environment")
     func readsValueFromEnvironmentVariable() async throws {
         setenv("TEST_FACTORY_KEY", "factory-value", 1)
         defer { unsetenv("TEST_FACTORY_KEY") }
-        
+
         try await withApp { app in
-            let deps = ConfigReaderFactory.Dependencies(
-                app: app,
-                jwksConfig: nil,
-                versionKey: "app.version",
-                keys: [],
-                jsonStringKeys: []
-            )
-            
-            let reader = await ConfigReaderFactory.make(deps)
-            let value = reader.string(forKey: "TEST_FACTORY_KEY")
-            
-            #expect(value == "factory-value")
+            let reader = await ConfigReaderFactory.make(makeDeps(app: app))
+            #expect(reader.string(forKey: "TEST_FACTORY_KEY") == "factory-value")
         }
+    }
+
+    // MARK: - Helpers
+
+    private func makeDeps(
+        app: Application,
+        jwksConfig: JWKSConfig? = nil,
+        versionKey: String = "app.version",
+        keys: Set<String> = [],
+        jsonStringKeys: Set<String> = []
+    ) -> ConfigReaderFactory.Dependencies {
+        ConfigReaderFactory.Dependencies(
+            app: app,
+            jwksConfig: jwksConfig,
+            versionKey: versionKey,
+            keys: keys,
+            jsonStringKeys: jsonStringKeys
+        )
     }
 }

@@ -5,57 +5,29 @@ import Testing
 
 @Suite("CachedSnapshot")
 struct CachedSnapshotTests {
+    private let databaseHostKey = AbsoluteConfigKey(["database", "host"])
+
     @Test("Returns provider name")
     func providerName() {
-        let provider = CachedConfigProvider(
-            providerName: "cached",
-            cachedValues: [:]
-        )
-
-        let snapshot: any ConfigSnapshot = provider.snapshot()
-        #expect(snapshot.providerName == "cached")
+        #expect(makeSnapshot().providerName == "cached")
     }
 
     @Test("Returns value from provider")
     func valueLookup() throws {
-        let provider = CachedConfigProvider(
-            providerName: "cached",
-            cachedValues: [
-                "database-host": "localhost"
-            ]
-        )
-
-        let snapshot: any ConfigSnapshot = provider.snapshot()
-        
-        let result = try snapshot.value(
-            forKey: AbsoluteConfigKey(["database", "host"]),
-            type: .string
-        )
+        let result = try makeSnapshot(cachedValues: ["database-host": "localhost"])
+            .value(forKey: databaseHostKey, type: .string)
 
         #expect(result.encodedKey == "database-host")
 
-        guard let value = result.value else {
-            Issue.record("Expected value")
-            return
-        }
-
+        let value = try #require(result.value)
         #expect(value.content == .string("localhost"))
         #expect(value.isSecret == false)
     }
 
     @Test("Returns nil value when key is missing")
     func missingValue() throws {
-        let provider = CachedConfigProvider(
-            providerName: "cached",
-            cachedValues: [:]
-        )
-
-        let snapshot: any ConfigSnapshot = provider.snapshot()
-        
-        let result = try snapshot.value(
-            forKey: AbsoluteConfigKey(["database", "host"]),
-            type: .string
-        )
+        let result = try makeSnapshot()
+            .value(forKey: databaseHostKey, type: .string)
 
         #expect(result.encodedKey == "database-host")
         #expect(result.value == nil)
@@ -63,19 +35,14 @@ struct CachedSnapshotTests {
 
     @Test("Propagates parsing errors")
     func parsingError() {
-        let provider = CachedConfigProvider(
-            providerName: "cached",
-            cachedValues: [
-                "server-port": "not-an-int"
-            ]
-        )
-
-        let snapshot: any ConfigSnapshot = provider.snapshot()
-        #expect(throws: (any Error).self) {
-            try snapshot.value(
-                forKey: AbsoluteConfigKey(["server", "port"]),
-                type: .int
-            )
+        #expect(throws: ConfigParseError.self) {
+            try makeSnapshot(cachedValues: ["server-port": "not-an-int"])
+                .value(forKey: AbsoluteConfigKey(["server", "port"]), type: .int)
         }
+    }
+
+    // MARK: - Helpers
+    private func makeSnapshot(cachedValues: [String: String] = [:]) -> any ConfigSnapshot {
+        CachedConfigProvider(providerName: "cached", cachedValues: cachedValues).snapshot()
     }
 }

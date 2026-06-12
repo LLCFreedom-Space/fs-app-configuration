@@ -47,7 +47,8 @@ public enum ConfigReaderFactory {
     /// - Returns: A fully configured `ConfigReader` instance.
     public static func make(_ dependencies: Dependencies) async -> ConfigReader {
         let envProvider = EnvironmentVariablesProvider()
-        let consulProvider = await CachedConfigProvider.consul(
+        let cachedConfigProvider = CachedConfigProvider(providerName: "CachedConfigProvider", cachedValues: [:])
+        let consulProvider = await cachedConfigProvider.consul(
             app: dependencies.app,
             keys: dependencies.keys,
             jsonStringKeys: dependencies.jsonStringKeys
@@ -56,7 +57,7 @@ public enum ConfigReaderFactory {
             jwksConfig: dependencies.jwksConfig,
             consulProvider: consulProvider
         )
-        let fileProvider = CachedConfigProvider.localFile(
+        let fileProvider = cachedConfigProvider.localFile(
             app: dependencies.app,
             shouldLoadJWKS: shouldLoadJWKS,
             jwksConfig: dependencies.jwksConfig,

@@ -3,181 +3,124 @@ import VaporTesting
 import Testing
 import Configuration
 
-@Suite("App configuration tests", .serialized)
+@Suite("App configuration tests")
 struct ConfigValueParsingTests {
-    private let sut = MockParser()
+    private let mockParser = MockParser()
     private let key = "app.test.key"
+
+    // MARK: - String
 
     @Test("string — returns rawValue unchanged")
     func stringReturnsRawValue() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "hello", type: .string)
+        let result = try mockParser.parseConfigValue(key: key, rawValue: "hello", type: .string)
         #expect(result.content == .string("hello"))
+        #expect(result.isSecret == false)
     }
 
     @Test("string — preserves whitespace and special characters unchanged")
     func stringPreservesWhitespaceAndSpecialChars() throws {
         let raw = "  hello & !@# "
-        let result = try sut.parseConfigValue(key: key, rawValue: raw, type: .string)
+        let result = try mockParser.parseConfigValue(key: key, rawValue: raw, type: .string)
         #expect(result.content == .string(raw))
     }
 
-    @Test("int — parses valid integer")
-    func intParsesValidValue() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "42", type: .int)
-        #expect(result.content == .int(42))
+    // MARK: - Int
+
+    @Test("int — parses value", arguments: [("42", 42), ("-7", -7)])
+    func intParsesValue(rawValue: String, expected: Int) throws {
+        let result = try mockParser.parseConfigValue(key: key, rawValue: rawValue, type: .int)
+        #expect(result.content == .int(expected))
     }
 
-    @Test("int — parses negative integer")
-    func intParsesNegativeValue() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "-7", type: .int)
-        #expect(result.content == .int(-7))
+    @Test("int — throws for non-parseable string", arguments: ["abc", "3.14"])
+    func intThrowsForInvalidString(rawValue: String) {
+        expectNotConvertible(rawValue: rawValue, type: .int)
     }
 
-    @Test("int — throws for non-numeric string")
-    func intThrowsForNonNumericString() {
-        #expect {
-            try sut.parseConfigValue(key: key, rawValue: "abc", type: .int)
-        } throws: { error in
-            guard let error = error as? ConfigParseError,
-                  case .valueNotConvertible(let key, let type) = error
-            else {
-                return false
-            }
-            return key == key && type == .int
-        }
-    }
+    // MARK: - Double
 
-    @Test("int — throws for float string")
-    func intThrowsForFloatString() {
-        #expect {
-            try sut.parseConfigValue(key: key, rawValue: "3.14", type: .int)
-        } throws: { error in
-            guard let error = error as? ConfigParseError,
-                  case .valueNotConvertible(let key, let type) = error
-            else {
-                return false
-            }
-            return key == key && type == .int
-        }
-    }
-
-    @Test("double — parses decimal value")
-    func doubleParsesDecimalValue() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "3.14", type: .double)
-        #expect(result.content == .double(3.14))
-    }
-
-    @Test("double — parses integer-like string as Double")
-    func doubleParsesIntegerLikeString() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "42", type: .double)
-        #expect(result.content == .double(42.0))
+    @Test("double — parses value", arguments: [("3.14", 3.14), ("42", 42.0)])
+    func doubleParsesValue(rawValue: String, expected: Double) throws {
+        let result = try mockParser.parseConfigValue(key: key, rawValue: rawValue, type: .double)
+        #expect(result.content == .double(expected))
     }
 
     @Test("double — throws for non-numeric string")
     func doubleThrowsForNonNumericString() {
-        #expect {
-            try sut.parseConfigValue(key: key, rawValue: "not-a-number", type: .double)
-        } throws: { error in
-            guard let error = error as? ConfigParseError,
-                  case .valueNotConvertible(let key, let type) = error
-            else { return false }
-            return key == key && type == .double
-        }
+        expectNotConvertible(rawValue: "not-a-number", type: .double)
     }
 
-    @Test("bool — parses true")
-    func boolParsesTrue() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "true", type: .bool)
-        #expect(result.content == .bool(true))
-    }
+    // MARK: - Bool
 
-    @Test("bool — parses false")
-    func boolParsesFalse() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "false", type: .bool)
-        #expect(result.content == .bool(false))
+    @Test("bool — parses value", arguments: [("true", true), ("false", false)])
+    func boolParsesValue(rawValue: String, expected: Bool) throws {
+        let result = try mockParser.parseConfigValue(key: key, rawValue: rawValue, type: .bool)
+        #expect(result.content == .bool(expected))
     }
 
     @Test("bool — throws for invalid string")
     func boolThrowsForInvalidString() {
-        #expect {
-            try sut.parseConfigValue(key: key, rawValue: "maybe", type: .bool)
-        } throws: { error in
-            guard let error = error as? ConfigParseError,
-                  case .valueNotConvertible(let key, let type) = error
-            else { return false }
-            return key == key && type == .bool
-        }
+        expectNotConvertible(rawValue: "maybe", type: .bool)
     }
+
+    // MARK: - StringArray
 
     @Test("stringArray — splits by comma")
     func stringArraySplitsByComma() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "a,b,c", type: .stringArray)
+        let result = try mockParser.parseConfigValue(key: key, rawValue: "a,b,c", type: .stringArray)
         #expect(result.content == .stringArray(["a", "b", "c"]))
     }
 
     @Test("stringArray — trims whitespace around elements")
     func stringArrayTrimsWhitespace() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: " a , b , c ", type: .stringArray)
+        let result = try mockParser.parseConfigValue(key: key, rawValue: " a , b , c ", type: .stringArray)
         #expect(result.content == .stringArray(["a", "b", "c"]))
     }
 
-    @Test("stringArray — preserves empty elements between commas (omittingEmptySubsequences: false)")
+    @Test("stringArray — preserves empty elements between commas")
     func stringArrayPreservesEmptyElements() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "a,,b", type: .stringArray)
+        let result = try mockParser.parseConfigValue(key: key, rawValue: "a,,b", type: .stringArray)
         #expect(result.content == .stringArray(["a", "", "b"]))
     }
 
     @Test("stringArray — returns single-element array when no comma is present")
     func stringArrayReturnsSingleElement() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "only", type: .stringArray)
+        let result = try mockParser.parseConfigValue(key: key, rawValue: "only", type: .stringArray)
         #expect(result.content == .stringArray(["only"]))
     }
 
     @Test("stringArray — empty input produces a single empty element")
     func stringArrayEmptyInputGivesSingleEmptyElement() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "", type: .stringArray)
+        let result = try mockParser.parseConfigValue(key: key, rawValue: "", type: .stringArray)
         #expect(result.content == .stringArray([""]))
     }
 
-    @Test("intArray — parses valid integers")
-    func intArrayParsesValidIntegers() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "1,2,3", type: .intArray)
-        #expect(result.content == .intArray([1, 2, 3]))
+    // MARK: - IntArray
+
+    @Test("intArray — parses valid integers", arguments: [
+        ("1,2,3", [1, 2, 3]),
+        (" 1 , 2 , 3 ", [1, 2, 3]),
+    ])
+    func intArrayParsesIntegers(rawValue: String, expected: [Int]) throws {
+        let result = try mockParser.parseConfigValue(key: key, rawValue: rawValue, type: .intArray)
+        #expect(result.content == .intArray(expected))
     }
 
-    @Test("intArray — trims whitespace before parsing each element")
-    func intArrayTrimsWhitespace() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: " 1 , 2 , 3 ", type: .intArray)
-        #expect(result.content == .intArray([1, 2, 3]))
+    @Test("intArray — throws for invalid element", arguments: ["1,abc,3", "1,,3"])
+    func intArrayThrowsForInvalidElement(rawValue: String) {
+        expectNotConvertible(rawValue: rawValue, type: .intArray)
     }
 
-    @Test("intArray — throws for non-integer element")
-    func intArrayThrowsForNonIntegerElement() {
+    // MARK: - Helpers
+
+    private func expectNotConvertible(rawValue: String, type: ConfigType) {
         #expect {
-            try sut.parseConfigValue(key: key, rawValue: "1,abc,3", type: .intArray)
+            try mockParser.parseConfigValue(key: key, rawValue: rawValue, type: type)
         } throws: { error in
-            guard let error = error as? ConfigParseError,
-                  case .valueNotConvertible(let key, let type) = error
+            guard let parseError = error as? ConfigParseError,
+                  case .valueNotConvertible(let errorKey, let errorType) = parseError
             else { return false }
-            return key == key && type == .intArray
+            return errorKey == key && errorType == type
         }
-    }
-
-    @Test("intArray — throws for empty element between commas")
-    func intArrayThrowsForEmptyElement() {
-        #expect {
-            try sut.parseConfigValue(key: key, rawValue: "1,,3", type: .intArray)
-        } throws: { error in
-            guard let error = error as? ConfigParseError,
-                  case .valueNotConvertible(let key, let type) = error
-            else { return false }
-            return key == key && type == .intArray
-        }
-    }
-
-    @Test("result always has isSecret == false")
-    func resultIsAlwaysNonSecret() throws {
-        let result = try sut.parseConfigValue(key: key, rawValue: "value", type: .string)
-        #expect(result.isSecret == false)
     }
 }
