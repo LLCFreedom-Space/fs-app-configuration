@@ -16,25 +16,29 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //
-//  Configure.swift
+//  Bool+Extensions.swift
+//  fs-app-configuration
 //
-//
-//  Created by Mykola Buhaiov on 09.03.2023.
+//  Created by Mykola Buhaiov on 07.06.2026.
 //
 
 import Vapor
 
-public struct Configure {
-    /// Application
-    let app: Application
-
-    public func logLevel() {
-        if let logLevel = Environment.process.LOG_LEVEL {
-            app.logger.logLevel = Logger.Level(rawValue: logLevel) ?? .info
-            app.logger.info("SUCCESS: Server start with logLevel: \(logLevel)")
-        } else {
-            app.logger.logLevel = .info
-            app.logger.info("SUCCESS: Server start with logLevel: .info")
+public extension Bool {
+    /// Parses a string into a boolean value.
+    /// - Parameter value: The input string to parse.
+    /// - Returns:
+    ///   - `true` if the input matches a known true representation
+    ///   - `false` if the input matches a known false representation
+    ///   - `nil` if the input does not match any supported format
+    static func parse(_ value: String) -> Bool? {
+        switch value.lowercased() {
+        case "true", "1", "yes":
+            return true
+        case "false", "0", "no":
+            return false
+        default:
+            return nil
         }
     }
 }

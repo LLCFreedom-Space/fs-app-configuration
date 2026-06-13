@@ -22,36 +22,78 @@
 //  Created by Mykola Buhaiov on 09.03.2023.
 //
 
+import Configuration
 import Vapor
 
-/// Extends `Application` to support custom app configuration using `AppConfigurationProtocol`.
-extension Application {
-    /// A private key used to store and retrieve the app configuration from `Application.storage`.
-    private struct AppConfigurationKey: StorageKey {
-        typealias Value = AppConfigurationProtocol
+public extension Application {
+    /// A storage key used to persist `ConfigReader` inside `Application.storage`.
+    struct ConfigReaderKey: StorageKey {
+        public typealias Value = ConfigReader
     }
-    /// The app's custom configuration object conforming to `AppConfigurationProtocol`.
-    ///
-    /// - `get`: Returns the stored configuration. If not set, triggers a runtime crash with `fatalError`.
-    /// - `set`: Stores the configuration in `Application.storage` under the key `AppConfigurationKey`.
-    ///
-    /// This allows safely attaching a custom configuration object to the `Application` lifecycle.
-    public var appConfiguration: AppConfigurationProtocol {
+    /// The shared `ConfigReader` instance attached to the Vapor `Application`.
+    var configReader: ConfigReader {
         get {
-            guard let manager = storage[AppConfigurationKey.self] else {
-                fatalError("AppConfiguration not setup.")
+            guard let reader = storage[ConfigReaderKey.self] else {
+                fatalError("ConfigReader not setup. Ensure `configure(_:)` has been called.")
             }
-            return manager
+            return reader
         }
         set {
-            storage[AppConfigurationKey.self] = newValue
+            storage[ConfigReaderKey.self] = newValue
         }
     }
+}
 
-    /// A convenience accessor for initializing a `Configure` object with the current application.
-    ///
-    /// Use this to set up or configure the app via a builder-style API.
-    public var configure: Configure {
-        .init(app: self)
+public extension Application {
+    /// Configures and attaches a `ConfigReader` instance to the `Application`.
+    /// - Parameters:
+    ///   - jwksConfig: Optional JWKS configuration used for secure configuration sources.
+    ///   - versionKey: A configuration key representing the application version.
+    ///   - keys: A set of configuration keys that should be preloaded or observed.
+    ///   - jsonStringKeys: A set of keys whose values are expected to be JSON strings.
+    func configureConfigReader(
+        jwksConfig: JWKSConfig? = nil,
+        versionKey: String? = nil,
+        keys: Set<String> = [],
+        jsonStringKeys: Set<String> = []
+    ) async {
+        let envProvider = EnvironmentVariablesProvider()
+        let consulProvider = await CachedConfigProvider.shared.consul(
+            app: self,
+            keys: keys,
+            jsonStringKeys: jsonStringKeys
+        )
+        let shouldLoadJWKS = shouldLoadJWKS(
+            jwksConfig: jwksConfig,
+            consulProvider: consulProvider
+        )
+        let fileProvider = CachedConfigProvider.shared.localFile(
+            app: self,
+            shouldLoadJWKS: shouldLoadJWKS,
+            jwksConfig: jwksConfig,
+            versionKey: versionKey
+        )
+        self.configReader = ConfigReader(
+            providers: [
+                consulProvider,
+                envProvider,
+                fileProvider
+            ]
+        )
+    }
+    
+    /// Determines whether JWKS should be loaded from local files instead of Consul.
+    /// - Parameters:
+    ///   - jwksConfig: Optional JWKS configuration.
+    ///   - consulProvider: The already-initialized Consul configuration provider.
+    /// - Returns: `true` if JWKS should be loaded from local files, otherwise `false`.
+    func shouldLoadJWKS(
+        jwksConfig: JWKSConfig?,
+        consulProvider: CachedConfigProvider
+    ) -> Bool {
+        guard let jwksConfig else {
+            return false
+        }
+        return !consulProvider.hasValue(forKey: jwksConfig.key)
     }
 }

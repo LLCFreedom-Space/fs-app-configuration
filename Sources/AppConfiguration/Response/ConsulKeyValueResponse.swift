@@ -27,40 +27,35 @@ import Vapor
 // A generic `ConsulKeyValue` data that can be sent `ConsulKV service` in response.
 /// [Learn More →](https://www.consul.io/api/kv)
 struct ConsulKeyValueResponse: Content, Hashable {
-    /// `LockIndex` is the number of times this key has successfully been acquired in a lock. If the lock is held, the
+    /// The number of times this key has successfully been acquired in a lock.
     let lockIndex: Int?
-
-    /// `Key` is simply the full path of the entry.
+    /// The full hierarchical path of the key within the Consul KV store.
     let key: String?
-
-    /// `Flags` is an opaque unsigned integer that can be attached to each entry. Clients can choose to use this however makes sense for their application.
+    /// An opaque unsigned integer attached to the entry.
     let flags: Int?
-
-    /// `Value` is a base64-encoded blob of data.
+    /// The Base64-encoded value stored for this key.
     let value: String?
-
-    /// `CreateIndex` is the internal index value that represents when the entry was created.
+    /// The internal index value representing when this entry was created.
     let createIndex: Int?
-
-    /// `ModifyIndex` is the last index that modified this key. This index corresponds to the X-Consul-Index header value that is returned in responses,
-    /// and it can be used to establish blocking queries by setting the index query parameter.
-    ///  You can even perform blocking queries against entire subtrees of the KV store: if ?recurse is provided, the returned X-Consul-Index corresponds to the latest ModifyIndex within the prefix,
-    ///  and a blocking query using that index will wait until any key within that prefix is updated.
+    /// The last index that modified this key.
+    /// This corresponds to the `X-Consul-Index` HTTP header and is used for:
+    /// - blocking queries
+    /// - watching key changes
+    /// - subtree change detection when using `?recurse=true`
     let modifyIndex: Int?
-
-    /// `CodingKeys` for `ConsulKeyValueResponse`
+    /// Coding keys used to map Consul's JSON response fields to Swift properties.
     enum CodingKeys: String, CodingKey {
-        /// lockIndex
+        /// Lock index metadata
         case lockIndex = "LockIndex"
-        /// key
+        /// Key path in Consul KV store
         case key = "Key"
-        /// flags
+        /// Custom flags field
         case flags = "Flags"
-        /// value
+        /// Base64 encoded value
         case value = "Value"
-        /// createIndex
+        /// Creation index
         case createIndex = "CreateIndex"
-        /// modifyIndex
+        /// Modification index
         case modifyIndex = "ModifyIndex"
     }
 }
