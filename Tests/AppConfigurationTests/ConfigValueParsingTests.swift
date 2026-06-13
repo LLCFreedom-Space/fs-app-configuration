@@ -99,7 +99,7 @@ struct ConfigValueParsingTests {
 
     @Test("intArray — parses valid integers", arguments: [
         ("1,2,3", [1, 2, 3]),
-        (" 1 , 2 , 3 ", [1, 2, 3]),
+        (" 1 , 2 , 3 ", [1, 2, 3])
     ])
     func intArrayParsesIntegers(rawValue: String, expected: [Int]) throws {
         let result = try mockParser.parseConfigValue(key: key, rawValue: rawValue, type: .intArray)

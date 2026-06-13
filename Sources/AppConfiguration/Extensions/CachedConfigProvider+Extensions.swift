@@ -145,8 +145,8 @@ public extension CachedConfigProvider {
     func localFile(
         app: Application,
         shouldLoadJWKS: Bool,
-        jwksConfig: JWKSConfig?,
-        versionKey: String?
+        jwksConfig: JWKSConfig? = nil,
+        versionKey: String? = nil
     ) -> Self {
         var values: [String: String] = [:]
         if shouldLoadJWKS, let jwksConfig {

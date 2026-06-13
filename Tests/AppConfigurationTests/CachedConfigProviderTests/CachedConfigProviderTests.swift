@@ -61,7 +61,7 @@ struct CachedConfigProviderTests {
         try await withApp(environment: .development) { app in
             app.mockClientRequest(body: consulJSON(["X": "1", "Y": "2"]))
             let provider = await makeConsulProvider(app: app, keys: ["X", "Y"])
-            #expect(provider.cachedValues["missing-keys"] == "")
+            #expect(provider.cachedValues["missing-keys"]?.isEmpty == true)
         }
     }
 

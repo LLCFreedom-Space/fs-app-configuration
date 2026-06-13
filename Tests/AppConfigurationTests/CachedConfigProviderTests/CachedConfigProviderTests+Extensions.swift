@@ -73,7 +73,7 @@ extension CachedConfigProviderTests {
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: false,
-                jwksConfig: nil, versionKey: versionKey
+                versionKey: versionKey
             )
             #expect(provider.cachedValues[versionKey]?.contains("2.5.1") == true)
         }
@@ -86,7 +86,7 @@ extension CachedConfigProviderTests {
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: false,
-                jwksConfig: nil, versionKey: versionKey
+                versionKey: versionKey
             )
             #expect(provider.cachedValues[versionKey] == nil)
         }
@@ -103,7 +103,7 @@ extension CachedConfigProviderTests {
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: false,
-                jwksConfig: nil, versionKey: versionKey
+                versionKey: versionKey
             )
             #expect(provider.cachedValues[versionKey] == nil)
         }

@@ -27,14 +27,6 @@ func consulJSON(_ pairs: KeyValuePairs<String, String>) -> String {
     }.joined(separator: ",") + "]"
 }
 
-// MARK: - File system
-func createTemporaryDirectory() throws -> String {
-    let path = (NSTemporaryDirectory() as NSString)
-        .appendingPathComponent(UUID().uuidString) + "/"
-    try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true)
-    return path
-}
-
 func makeConsulProvider(
     app: Application,
     keys: Set<String> = [],
@@ -42,4 +34,12 @@ func makeConsulProvider(
 ) async -> CachedConfigProvider {
     let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
     return await cachedConfigProvider.consul(app: app, keys: keys, jsonStringKeys: jsonStringKeys)
+}
+
+// MARK: - File system
+func createTemporaryDirectory() throws -> String {
+    let path = (NSTemporaryDirectory() as NSString)
+        .appendingPathComponent(UUID().uuidString) + "/"
+    try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true)
+    return path
 }
