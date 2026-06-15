@@ -45,7 +45,7 @@ public extension CachedConfigProvider {
         
         let consulUrl = Environment.process.CONSUL_URL ?? "http://127.0.0.1:8500"
         let consulKv = Environment.process.CONSUL_KV ?? "/v1/kv/config-folder"
-        let consulConfigPath = Environment.process.CONSUL_CONFIG_PATH ?? "serverName"
+        let consulConfigPath = Environment.process.CONSUL_CONFIG_PATH ?? "server-name"
         let consulConfigUrl = consulUrl + consulKv + "/" + consulConfigPath + "?recurse=true"
         
         app.logger.debug("ConsulHTTPClient: fetching config", metadata: [

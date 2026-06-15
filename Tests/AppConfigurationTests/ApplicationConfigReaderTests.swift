@@ -83,7 +83,8 @@ struct ApplicationConfigReaderTests {
         keys: Set<String> = [],
         jsonStringKeys: Set<String> = []
     ) async {
-       await app.configureConfigReader(
+        await ConfigReaderFactory.configureConfigReader(
+            app: app,
             jwksConfig: jwksConfig,
             versionKey: versionKey,
             keys: keys,
