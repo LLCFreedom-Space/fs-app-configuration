@@ -3,7 +3,7 @@ import VaporTesting
 import Testing
 @testable import Configuration
 
-@Suite("ConfigReaderFactory")
+@Suite("ConfigReaderFactory", .serialized)
 struct ConfigReaderFactoryTests {
     @Test("Returns false when jwksConfig is nil")
     func returnsFalseWhenJWKSConfigIsNil() async throws {
@@ -118,16 +118,76 @@ struct ConfigReaderFactoryTests {
         }
     }
     
+    @Test("returns nil when jwksConfig is nil")
+    func nilConfig() async throws {
+        try await withApp { app in
+            let result = ConfigReaderFactory.resolveJWKSConfig(
+                jwksConfig: nil,
+                shouldLoadJWKS: true,
+                envProvider: EnvironmentVariablesProvider(),
+                app: app
+            )
+            #expect(result == nil)
+        }
+    }
+    
+        @Test("returns original config when shouldLoadJWKS is false")
+    func shouldNotLoad() async throws {
+        try await withApp { app in
+            let jwksConfig = JWKSConfig(fileName: "jwks.json", key: "jwks-keypair-file-name")
+            let result = ConfigReaderFactory.resolveJWKSConfig(
+                jwksConfig: jwksConfig,
+                shouldLoadJWKS: false,
+                envProvider: EnvironmentVariablesProvider(),
+                app: app
+            )
+            #expect(result?.key == jwksConfig.key)
+            #expect(result?.fileName == jwksConfig.fileName)
+        }
+    }
+    
+        @Test("returns config with file name from ENV when env key is set")
+    func envOverridesFileName() async throws {
+        try await withApp { app in
+            let jwksConfig = JWKSConfig(fileName: "jwks.json", key: "jwks-keypair-file-name")
+            setenv(jwksConfig.environmentKey, "jwks-from-env.json", 1)
+            defer { unsetenv(jwksConfig.environmentKey) }
+            let result = ConfigReaderFactory.resolveJWKSConfig(
+                jwksConfig: jwksConfig,
+                shouldLoadJWKS: true,
+                envProvider: EnvironmentVariablesProvider(),
+                app: app
+            )
+            #expect(result?.key == jwksConfig.key)
+            #expect(result?.fileName == "jwks-from-env.json")
+        }
+    }
+    
+        @Test("returns original config when env key is absent")
+    func envKeyAbsent() async throws {
+        try await withApp { app in
+            let jwksConfig = JWKSConfig(fileName: "jwks.json", key: "jwks-keypair-file-name")
+            unsetenv(jwksConfig.environmentKey)
+            let result = ConfigReaderFactory.resolveJWKSConfig(
+                jwksConfig: jwksConfig,
+                shouldLoadJWKS: true,
+                envProvider: EnvironmentVariablesProvider(),
+                app: app
+            )
+            #expect(result?.key == jwksConfig.key)
+            #expect(result?.fileName == jwksConfig.fileName)
+        }
+    }
+    
     private func makeConsulProvider(
         app: Application,
         keys: Set<String> = [],
         jsonStringKeys: Set<String> = []
     ) async -> CachedConfigProvider {
-        await CachedConfigProvider.shared.consul(
+        await CachedConfigProvider(providerName: "Consul", cachedValues: [:]).consul(
             app: app,
             keys: keys,
             jsonStringKeys: jsonStringKeys
         )
     }
-    
 }

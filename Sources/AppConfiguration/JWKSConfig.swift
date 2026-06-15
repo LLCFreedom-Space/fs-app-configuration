@@ -39,3 +39,11 @@ public struct JWKSConfig: Content {
         self.key = key
     }
 }
+
+// JWKSConfig+EnvironmentKey.swift
+extension JWKSConfig {
+    /// Converts `jwks-keypair-file-name` → `JWKS_KEYPAIR_FILE_NAME`
+    var environmentKey: String {
+        key.replacingOccurrences(of: "-", with: "_").uppercased()
+    }
+}

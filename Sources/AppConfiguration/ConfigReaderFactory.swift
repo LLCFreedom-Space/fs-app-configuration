@@ -34,7 +34,7 @@ public enum ConfigReaderFactory {
     ///   - versionKey: A configuration key representing the application version.
     ///   - keys: A set of configuration keys that should be preloaded or observed.
     ///   - jsonStringKeys: A set of keys whose values are expected to be JSON strings.
-   public static func configureConfigReader(
+    public static func configureConfigReader(
         app: Application,
         jwksConfig: JWKSConfig? = nil,
         versionKey: String? = nil,
@@ -42,7 +42,8 @@ public enum ConfigReaderFactory {
         jsonStringKeys: Set<String> = []
     ) async {
         let envProvider = EnvironmentVariablesProvider()
-        let consulProvider = await CachedConfigProvider.shared.consul(
+        let cachedConfigProvider = CachedConfigProvider(providerName: #fileID, cachedValues: [:])
+        let consulProvider = await cachedConfigProvider.consul(
             app: app,
             keys: keys,
             jsonStringKeys: jsonStringKeys
@@ -51,10 +52,16 @@ public enum ConfigReaderFactory {
             jwksConfig: jwksConfig,
             consulProvider: consulProvider
         )
-        let fileProvider = CachedConfigProvider.shared.localFile(
+        let resolvedJWKSConfig = resolveJWKSConfig(
+            jwksConfig: jwksConfig,
+            shouldLoadJWKS: shouldLoadJWKS,
+            envProvider: envProvider,
+            app: app
+        )
+        let fileProvider = cachedConfigProvider.localFile(
             app: app,
             shouldLoadJWKS: shouldLoadJWKS,
-            jwksConfig: jwksConfig,
+            jwksConfig: resolvedJWKSConfig,
             versionKey: versionKey
         )
         app.configReader = ConfigReader(
@@ -71,7 +78,7 @@ public enum ConfigReaderFactory {
     ///   - jwksConfig: Optional JWKS configuration.
     ///   - consulProvider: The already-initialized Consul configuration provider.
     /// - Returns: `true` if JWKS should be loaded from local files, otherwise `false`.
-    public static func shouldLoadJWKS(
+    static func shouldLoadJWKS(
         jwksConfig: JWKSConfig?,
         consulProvider: CachedConfigProvider
     ) -> Bool {
@@ -79,5 +86,30 @@ public enum ConfigReaderFactory {
             return false
         }
         return !consulProvider.hasValue(forKey: jwksConfig.key)
+    }
+    
+    /// Resolves the effective JWKS config.
+    /// When loading from local files, allows ENV to override the default file name.
+    static func resolveJWKSConfig(
+        jwksConfig: JWKSConfig?,
+        shouldLoadJWKS: Bool,
+        envProvider: EnvironmentVariablesProvider,
+        app: Application
+    ) -> JWKSConfig? {
+        guard shouldLoadJWKS, let config = jwksConfig else {
+            return jwksConfig
+        }
+        guard let envFileName = try? envProvider.environmentValue(forName: config.environmentKey) else {
+            app.logger.debug("ENV key not set, using default JWKS file name", metadata: [
+                "envKey": "\(config.environmentKey)",
+                "fileName": "\(config.fileName)"
+            ])
+            return config
+        }
+        app.logger.debug("JWKS file name resolved from ENV", metadata: [
+            "envKey": "\(config.environmentKey)",
+            "fileName": "\(envFileName)"
+        ])
+        return JWKSConfig(fileName: envFileName, key: config.key)
     }
 }
