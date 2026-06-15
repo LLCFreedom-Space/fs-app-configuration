@@ -108,19 +108,6 @@ extension CachedConfigProviderTests {
             #expect(provider.cachedValues[versionKey] == nil)
         }
     }
-
-    // MARK: - Helpers
-
-    private func withTempApp(
-        _ body: (Application, _ tmp: String) async throws -> Void
-    ) async throws {
-        let tmp = try createTemporaryDirectory()
-        defer { try? FileManager.default.removeItem(atPath: tmp) }
-        try await withApp { app in
-            app.directory = DirectoryConfiguration(workingDirectory: tmp)
-            try await body(app, tmp)
-        }
-    }
 }
 
 // MARK: - CachedConfigProvider direct

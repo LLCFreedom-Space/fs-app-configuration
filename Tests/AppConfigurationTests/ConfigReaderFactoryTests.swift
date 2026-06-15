@@ -8,7 +8,7 @@ struct ConfigReaderFactoryTests {
     @Test("Returns false when jwksConfig is nil")
     func returnsFalseWhenJWKSConfigIsNil() async throws {
         try await withApp { app in
-            let result = app.shouldLoadJWKS(
+            let result = ConfigReaderFactory.shouldLoadJWKS(
                 jwksConfig: nil,
                 consulProvider: await makeConsulProvider(app: app)
             )
@@ -20,7 +20,7 @@ struct ConfigReaderFactoryTests {
     func returnsTrueWhenConsulLacksJWKSKey() async throws {
         try await withApp { app in
             let jwksConfig = JWKSConfig(fileName: "jwks.public.key", key: "path/jwks.json")
-            let result = app.shouldLoadJWKS(
+            let result = ConfigReaderFactory.shouldLoadJWKS(
                 jwksConfig: jwksConfig,
                 consulProvider: await makeConsulProvider(app: app)
             )
@@ -34,7 +34,7 @@ struct ConfigReaderFactoryTests {
             let jwksConfig = JWKSConfig(fileName: "jwks.public.key", key: "path/jwks.json")
             app.mockClientRequest(body: consulJSON([jwksConfig.key: "eyJrZXlzIjpbXX0="]))
             let cachedConfigProvider = CachedConfigProvider(providerName: #function, cachedValues: [jwksConfig.key: "eyJrZXlzIjpbXX0="])
-            let result = app.shouldLoadJWKS(
+            let result = ConfigReaderFactory.shouldLoadJWKS(
                 jwksConfig: jwksConfig,
                 consulProvider: cachedConfigProvider
             )
@@ -45,7 +45,7 @@ struct ConfigReaderFactoryTests {
     @Test("Make returns a usable reader when jwksConfig is nil")
     func makeReturnsUsableReaderWithoutJWKSConfig() async throws {
         try await withApp { app in
-            await app.configureConfigReader()
+            await ConfigReaderFactory.configureConfigReader(app: app)
             #expect(app.configReader.string(forKey: "NONEXISTENT_KEY") == nil)
         }
     }
@@ -54,7 +54,7 @@ struct ConfigReaderFactoryTests {
     func makeReturnsUsableReaderWithJWKSConfig() async throws {
         try await withApp { app in
             let jwksConfig = JWKSConfig(fileName: "jwks.public.key", key: "/etc/jwks.json")
-            await app.configureConfigReader(jwksConfig: jwksConfig)
+            await ConfigReaderFactory.configureConfigReader(app: app, jwksConfig: jwksConfig)
             #expect(app.configReader.string(forKey: "NONEXISTENT_KEY") == nil)
         }
     }
@@ -66,7 +66,7 @@ struct ConfigReaderFactoryTests {
         
         try await withApp(environment: .development) { app in
             app.mockClientRequest(body: consulJSON(["PRIORITY_KEY": "consul-value"]))
-            await app.configureConfigReader(keys: ["PRIORITY_KEY"])
+            await ConfigReaderFactory.configureConfigReader(app: app, keys: ["PRIORITY_KEY"])
             #expect(app.configReader.string(forKey: "PRIORITY_KEY") == "consul-value")
         }
     }
@@ -75,7 +75,7 @@ struct ConfigReaderFactoryTests {
     func readsValueFromEnvironmentVariable() async throws {
         setenv("TEST_FACTORY_KEY", "factory-value", 1)
         try await withApp { app in
-            await app.configureConfigReader()
+            await ConfigReaderFactory.configureConfigReader(app: app)
             #expect(app.configReader.string(forKey: "TEST_FACTORY_KEY") == "factory-value")
         }
     }
@@ -85,7 +85,7 @@ struct ConfigReaderFactoryTests {
             let key = "PRIORITY_TEST_KEY"
             setenv(key, "env-value", 1)
             app.mockClientRequest(body: #"{"PRIORITY_TEST_KEY": "consul-value"}"#)
-            await app.configureConfigReader(keys: [key])
+            await ConfigReaderFactory.configureConfigReader(app: app, keys: [key])
             #expect(app.configReader.string(forKey: key) == "env-value")
         }
     }
@@ -95,7 +95,7 @@ struct ConfigReaderFactoryTests {
         try await withApp(environment: .development) { app in
             let versionKey = "APP_VERSION"
             setenv(versionKey, "2.0.0-env", 1)
-            await app.configureConfigReader(versionKey: versionKey)
+            await ConfigReaderFactory.configureConfigReader(app: app, versionKey: versionKey)
             
             #expect(app.configReader.string(forKey: versionKey) == "2.0.0-env")
         }
@@ -105,7 +105,7 @@ struct ConfigReaderFactoryTests {
     func fileFallbackWhenConsulAndEnvEmpty() async throws {
         try await withApp(environment: .development) { app in
             let versionKey = "APP_VERSION"
-            await app.configureConfigReader(versionKey: versionKey)
+            await ConfigReaderFactory.configureConfigReader(app: app, versionKey: versionKey)
             #expect(app.configReader.string(forKey: versionKey) != nil)
         }
     }
@@ -113,7 +113,7 @@ struct ConfigReaderFactoryTests {
     @Test("Missing key returns nil")
     func missingKeyReturnsNil() async throws {
         try await withApp(environment: .development) { app in
-            await app.configureConfigReader()
+            await ConfigReaderFactory.configureConfigReader(app: app)
             #expect(app.configReader.string(forKey: "NON_EXISTENT_KEY_XYZ") == nil)
         }
     }
