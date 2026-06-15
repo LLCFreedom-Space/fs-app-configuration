@@ -24,7 +24,8 @@ func consulJSON(_ pairs: KeyValuePairs<String, String>) -> String {
     "[" + pairs.map { key, value in
         let base64EncodedString = Data(value.utf8).base64EncodedString()
         return #"{"Key":"config/server/\#(key)","Value":"\#(base64EncodedString)"}"#
-    }.joined(separator: ",") + "]"
+    }
+    .joined(separator: ",") + "]"
 }
 
 func makeConsulProvider(

@@ -118,7 +118,7 @@ struct ConfigValueParsingTests {
             try mockParser.parseConfigValue(key: key, rawValue: rawValue, type: type)
         } throws: { error in
             guard let parseError = error as? ConfigParseError,
-                  case .valueNotConvertible(let errorKey, let errorType) = parseError
+                  case let .valueNotConvertible(errorKey, errorType) = parseError
             else { return false }
             return errorKey == key && errorType == type
         }
