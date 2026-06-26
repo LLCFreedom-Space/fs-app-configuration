@@ -29,8 +29,6 @@ struct CachedConfigProviderTests {
     @Test("jsonStringKey unwrapJSONString handles all supported formats")
     func jsonStringKeyIsUnwrapped() async throws {
         try await withApp(environment: .development) { app in
-            let provider = await makeConsulProvider(app: app, jsonStringKeys: ["TOKEN"])
-
             let testCases: [(input: String, expected: String)] = [
                 (#""my-secret""#, "my-secret"),                    // valid JSON string
                 (#""Привіт 🌍""#, "Привіт 🌍"),                    // unicode
@@ -45,10 +43,11 @@ struct CachedConfigProviderTests {
 
             for testCase in testCases {
                 app.mockClientRequest(body: consulJSON(["TOKEN": testCase.input]))
-                #expect(
-                    provider.cachedValues["TOKEN"] == testCase.expected,
-                    "Input: \(testCase.input)"
+                let provider = await makeConsulProvider(
+                    app: app,
+                    jsonStringKeys: ["TOKEN"]
                 )
+                #expect(provider.cachedValues["TOKEN"] == testCase.expected, "Input: \(testCase.input)")
             }
         }
     }
