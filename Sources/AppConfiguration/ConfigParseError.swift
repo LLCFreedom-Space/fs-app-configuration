@@ -16,30 +16,25 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //
-//  Application+Extensions.swift
+//  ConfigParseError.swift
+//  fs-app-configuration
 //
-//
-//  Created by Mykola Buhaiov on 09.03.2023.
+//  Created by Mykola Buhaiov on 07.06.2026.
 //
 
-import Configuration
 import Vapor
+import Configuration
 
-public extension Application {
-    /// A storage key used to persist `ConfigReader` inside `Application.storage`.
-    struct ConfigReaderKey: StorageKey {
-        public typealias Value = ConfigReader
-    }
-    /// The shared `ConfigReader` instance attached to the Vapor `Application`.
-    var configReader: ConfigReader {
-        get {
-            guard let reader = storage[ConfigReaderKey.self] else {
-                fatalError("ConfigReader not setup. Ensure `configure(_:)` has been called.")
-            }
-            return reader
-        }
-        set {
-            storage[ConfigReaderKey.self] = newValue
+/// Errors that can occur while parsing configuration values.
+public enum ConfigParseError: Error, CustomStringConvertible {
+    /// Indicates that a configuration value could not be converted to the expected type.
+    case valueNotConvertible(key: String, type: ConfigType)
+
+    /// A human-readable description of the parsing error.
+    public var description: String {
+        switch self {
+        case let .valueNotConvertible(key, type):
+            return "Config value for key '\(key)' could not be converted to type \(type)."
         }
     }
 }
