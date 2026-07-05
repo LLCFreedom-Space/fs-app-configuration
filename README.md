@@ -194,7 +194,7 @@ Distributed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3. See [LICENSE.
 
 [GitHub](https://github.com/LLCFreedom-Space)
 
-[swift-image]:https://img.shields.io/badge/swift-5.8-orange.svg
+[swift-image]:https://img.shields.io/badge/swift-6.2-orange.svg
 [swift-url]: https://swift.org/
 [license-image]: https://img.shields.io/badge/License-GPLv3-blue.svg
 [license-url]: LICENSE

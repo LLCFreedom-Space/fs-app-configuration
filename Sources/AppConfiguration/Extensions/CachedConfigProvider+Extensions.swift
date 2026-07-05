@@ -48,7 +48,7 @@ public extension CachedConfigProvider {
         let consulConfigPath = Environment.process.CONSUL_CONFIG_PATH ?? "server-name"
         let consulConfigUrl = consulUrl + consulKv + "/" + consulConfigPath + "?recurse=true"
         
-        app.logger.debug("ConsulHTTPClient: fetching config", metadata: [
+        app.logger.debug("\(#function): fetching config.", metadata: [
             "url": "\(consulConfigUrl)"
         ])
         
@@ -56,19 +56,19 @@ public extension CachedConfigProvider {
             let response = try await app.client.get(URI(string: consulConfigUrl))
             
             guard response.status == .ok else {
-                app.logger.warning("ConsulHTTPClient: unexpected status", metadata: [
+                app.logger.warning("ConsulHTTPClient: unexpected status.", metadata: [
                     "status": "\(response.status.code)"
                 ])
                 return .empty(providerName: #function)
             }
             
             guard var body = response.body else {
-                app.logger.warning("ConsulHTTPClient: empty response body")
+                app.logger.warning("ConsulHTTPClient: empty response body.")
                 return .empty(providerName: #function)
             }
             
             guard let data = body.readData(length: body.readableBytes) else {
-                app.logger.warning("ConsulHTTPClient: failed to read body bytes")
+                app.logger.warning("ConsulHTTPClient: failed to read body bytes.")
                 return .empty(providerName: #function)
             }
             
@@ -95,7 +95,7 @@ public extension CachedConfigProvider {
                 .sorted()
                 .joined(separator: ", ")
             
-            app.logger.debug("\(#function): config loaded", metadata: [
+            app.logger.debug("\(#function): config loaded.", metadata: [
                 "loaded": "\(dictionary.count)",
                 "missingKeys": "\(missingKeys)"
             ])
@@ -104,10 +104,10 @@ public extension CachedConfigProvider {
             
             return Self(providerName: #function, cachedValues: dictionary)
         } catch let error as DecodingError {
-            app.logger.error("ConsulHTTPClient: failed to decode KV response", error: error)
+            app.logger.error("ConsulHTTPClient: failed to decode KV response.", error: error)
             return .empty(providerName: #function)
         } catch {
-            app.logger.warning("ConsulHTTPClient: KV fetch failed", error: error)
+            app.logger.warning("ConsulHTTPClient: KV fetch failed.", error: error)
             return .empty(providerName: #function)
         }
     }
@@ -174,13 +174,13 @@ public extension CachedConfigProvider {
         let path = app.directory.workingDirectory + jwksFileName
         
         guard let data = FileManager.default.contents(atPath: path) else {
-            app.logger.error("JWKS file not found", metadata: ["path": "\(path)"])
+            app.logger.error("JWKS file not found.", metadata: ["path": "\(path)"])
             return nil
         }
         
         guard let content = String(data: data, encoding: .utf8),
               !content.isEmpty else {
-            app.logger.error("JWKS file is empty or unreadable", metadata: ["path": "\(path)"])
+            app.logger.error("JWKS file is empty or unreadable.", metadata: ["path": "\(path)"])
             return nil
         }
         return content
@@ -191,13 +191,13 @@ public extension CachedConfigProvider {
     func loadVersion(app: Application) -> String? {
         let path = app.directory.publicDirectory + "openapi.yaml"
         guard let yaml = try? String(contentsOfFile: path, encoding: .utf8) else {
-            app.logger.error("openapi.yaml not found", metadata: ["path": "\(path)"])
+            app.logger.error("openapi.yaml not found.", metadata: ["path": "\(path)"])
             return nil
         }
         guard let version = yaml.split(separator: "\n")
             .first(where: { $0.contains("version: ") }),
               !version.isEmpty else {
-            app.logger.warning("Version not found in openapi.yaml")
+            app.logger.warning("Version not found in openapi.yaml.")
             return nil
         }
         return String(version)
