@@ -100,13 +100,13 @@ public enum ConfigReaderFactory {
             return jwksConfig
         }
         guard let envFileName = try? envProvider.environmentValue(forName: config.environmentKey) else {
-            app.logger.debug("ENV key not set, using default JWKS file name", metadata: [
+            app.logger.debug("ENV key not set, using default JWKS file name.", metadata: [
                 "envKey": "\(config.environmentKey)",
                 "fileName": "\(config.fileName)"
             ])
             return config
         }
-        app.logger.debug("JWKS file name resolved from ENV", metadata: [
+        app.logger.debug("JWKS file name resolved from ENV.", metadata: [
             "envKey": "\(config.environmentKey)",
             "fileName": "\(envFileName)"
         ])
