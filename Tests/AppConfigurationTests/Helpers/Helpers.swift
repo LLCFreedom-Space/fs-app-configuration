@@ -34,7 +34,7 @@ func makeConsulProvider(
     jsonStringKeys: Set<String> = []
 ) async -> CachedConfigProvider {
     let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
-    return await cachedConfigProvider.consul(app: app, keys: keys, jsonStringKeys: jsonStringKeys)
+    return await cachedConfigProvider.consul(app: app, keys: keys, jsonStringKeys: jsonStringKeys, missingKeys: "missing-keys")
 }
 
 // MARK: - File system

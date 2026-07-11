@@ -88,7 +88,8 @@ struct ApplicationConfigReaderTests {
             jwksConfig: jwksConfig,
             versionKey: versionKey,
             keys: keys,
-            jsonStringKeys: jsonStringKeys
+            jsonStringKeys: jsonStringKeys,
+            missingKeys: "missing-keys"
         )
     }
 }

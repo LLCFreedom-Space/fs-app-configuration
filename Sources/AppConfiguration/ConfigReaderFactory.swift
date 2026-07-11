@@ -39,14 +39,16 @@ public enum ConfigReaderFactory {
         jwksConfig: JWKSConfig? = nil,
         versionKey: String? = nil,
         keys: Set<String> = [],
-        jsonStringKeys: Set<String> = []
+        jsonStringKeys: Set<String> = [],
+        missingKeys: String
     ) async {
         let envProvider = EnvironmentVariablesProvider()
         let cachedConfigProvider = CachedConfigProvider(providerName: #fileID, cachedValues: [:])
         let consulProvider = await cachedConfigProvider.consul(
             app: app,
             keys: keys,
-            jsonStringKeys: jsonStringKeys
+            jsonStringKeys: jsonStringKeys,
+            missingKeys: missingKeys
         )
         let shouldLoadJWKS = shouldLoadJWKS(
             jwksConfig: jwksConfig,

@@ -37,7 +37,8 @@ public extension CachedConfigProvider {
     func consul(
         app: Application,
         keys: Set<String>,
-        jsonStringKeys: Set<String>
+        jsonStringKeys: Set<String>,
+        missingKeys: String
     ) async -> Self {
         guard app.environment != .testing else {
             return Self(providerName: #function, cachedValues: [:])
@@ -89,18 +90,18 @@ public extension CachedConfigProvider {
                 : value
             }
             
-            let missingKeys = keys
+            let missingKeysValue = keys
                 .union(jsonStringKeys)
                 .subtracting(dictionary.keys)
                 .sorted()
                 .joined(separator: ", ")
             
-            app.logger.debug("\(#function): config loaded.", metadata: [
+            app.logger.info("\(#function): config loaded.", metadata: [
                 "loaded": "\(dictionary.count)",
-                "missingKeys": "\(missingKeys)"
+                "missingKeys": "\(missingKeysValue)"
             ])
             
-            dictionary["missing-keys"] = missingKeys
+            dictionary[missingKeys] = missingKeysValue
             
             return Self(providerName: #function, cachedValues: dictionary)
         } catch let error as DecodingError {
