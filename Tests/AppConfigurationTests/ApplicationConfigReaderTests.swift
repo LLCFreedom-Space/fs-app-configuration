@@ -89,7 +89,7 @@ struct ApplicationConfigReaderTests {
             versionKey: versionKey,
             keys: keys,
             jsonStringKeys: jsonStringKeys,
-            missingKeys: "missing-keys"
+            missingKeysKey: "missing-keys"
         )
     }
 }

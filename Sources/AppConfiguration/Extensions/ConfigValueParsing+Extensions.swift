@@ -42,10 +42,7 @@ public extension ConfigValueParsing {
         case .string:
             content = .string(rawValue)
         case .int:
-            guard let value = Int(rawValue) else {
-                throw ConfigParseError.valueNotConvertible(key: key, type: type)
-            }
-            content = .int(value)
+            content = .int(try parseInt(rawValue, key: key, type: type))
         case .double:
             guard let value = Double(rawValue) else {
                 throw ConfigParseError.valueNotConvertible(key: key, type: type)
@@ -60,13 +57,7 @@ public extension ConfigValueParsing {
             content = .stringArray(parseArray(rawValue))
         case .intArray:
             content = .intArray(
-                try parseArray(rawValue).map {
-                    guard let value = Int($0) else {
-                        throw ConfigParseError.valueNotConvertible(key: key, type: type)
-                    }
-                    return value
-                }
-            )
+                try parseArray(rawValue).compactMap { try parseInt($0, key: key, type: type) })
         default:
             content = .string(rawValue)
         }
@@ -77,7 +68,25 @@ public extension ConfigValueParsing {
     /// - Parameter value: The raw comma-separated string.
     /// - Returns: An array of trimmed string components.
     func parseArray(_ value: String) -> [String] {
-        value.split(separator: ",", omittingEmptySubsequences: false)
+        var seen = Set<String>()
+        return value
+            .components(separatedBy: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .filter { seen.insert($0.lowercased()).inserted }
+    }
+    
+    /// Parses a string into an integer.
+    /// - Parameters:
+    ///   - value: The raw string value to parse.
+    ///   - key: The configuration key associated with the value. Used in the thrown error.
+    ///   - type: The expected configuration type. Used in the thrown error.
+    /// - Throws: `ConfigParseError.valueNotConvertible` if the value cannot be converted to an integer.
+    /// - Returns: The parsed integer value.
+    func parseInt(_ value: String, key: String, type: ConfigType) throws -> Int {
+        guard let int = Int(value) else {
+            throw ConfigParseError.valueNotConvertible(key: key, type: type)
+        }
+        return int
     }
 }

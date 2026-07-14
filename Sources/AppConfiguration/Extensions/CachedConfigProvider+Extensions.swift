@@ -38,10 +38,10 @@ public extension CachedConfigProvider {
         app: Application,
         keys: Set<String>,
         jsonStringKeys: Set<String>,
-        missingKeys: String
+        missingKeysKey: String
     ) async -> Self {
         guard app.environment != .testing else {
-            return Self(providerName: #function, cachedValues: [:])
+            return Self(providerName: .consul, cachedValues: [:])
         }
         
         let consulUrl = Environment.process.CONSUL_URL ?? "http://127.0.0.1:8500"
@@ -60,17 +60,17 @@ public extension CachedConfigProvider {
                 app.logger.warning("ConsulHTTPClient: unexpected status.", metadata: [
                     "status": "\(response.status.code)"
                 ])
-                return .empty(providerName: #function)
+                return .empty(providerName: .consul)
             }
             
             guard var body = response.body else {
                 app.logger.warning("ConsulHTTPClient: empty response body.")
-                return .empty(providerName: #function)
+                return .empty(providerName: .consul)
             }
             
             guard let data = body.readData(length: body.readableBytes) else {
                 app.logger.warning("ConsulHTTPClient: failed to read body bytes.")
-                return .empty(providerName: #function)
+                return .empty(providerName: .consul)
             }
             
             let entries = try JSONDecoder().decode([ConsulKeyValueResponse].self, from: data)
@@ -90,32 +90,31 @@ public extension CachedConfigProvider {
                 : value
             }
             
-            let missingKeysValue = keys
-                .union(jsonStringKeys)
+            let missingKeys = keys
+                .filter { !dictionary.keys.contains($0) }
                 .subtracting(dictionary.keys)
-                .sorted()
                 .joined(separator: ", ")
             
             app.logger.info("\(#function): config loaded.", metadata: [
                 "loaded": "\(dictionary.count)",
-                "missingKeys": "\(missingKeysValue)"
+                "missingKeys": "\(missingKeys)"
             ])
             
-            dictionary[missingKeys] = missingKeysValue
+            dictionary[missingKeysKey] = missingKeys
             
-            return Self(providerName: #function, cachedValues: dictionary)
+            return Self(providerName: .consul, cachedValues: dictionary)
         } catch let error as DecodingError {
             app.logger.error("ConsulHTTPClient: failed to decode KV response.", error: error)
-            return .empty(providerName: #function)
+            return .empty(providerName: .consul)
         } catch {
             app.logger.warning("ConsulHTTPClient: KV fetch failed.", error: error)
-            return .empty(providerName: #function)
+            return .empty(providerName: .consul)
         }
     }
     
     /// Returns an empty cached provider with no values.
     /// - Parameter providerName: The logical name of the provider (used for debugging/logging).
-    static func empty(providerName: String) -> Self {
+    static func empty(providerName: ProviderName) -> Self {
         Self(providerName: providerName, cachedValues: [:])
     }
     
@@ -163,7 +162,7 @@ public extension CachedConfigProvider {
                 "version": "\(String(describing: values[versionKey]))"
             ])
         }
-        return Self(providerName: #function, cachedValues: values)
+        return Self(providerName: .localFile, cachedValues: values)
     }
     
     /// Loads a JWKS file from disk.

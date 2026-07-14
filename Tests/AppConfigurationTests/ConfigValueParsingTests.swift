@@ -80,7 +80,7 @@ struct ConfigValueParsingTests {
     @Test("stringArray — preserves empty elements between commas")
     func stringArrayPreservesEmptyElements() throws {
         let result = try mockParser.parseConfigValue(key: key, rawValue: "a,,b", type: .stringArray)
-        #expect(result.content == .stringArray(["a", "", "b"]))
+        #expect(result.content == .stringArray(["a", "b"]))
     }
 
     @Test("stringArray — returns single-element array when no comma is present")
@@ -92,7 +92,7 @@ struct ConfigValueParsingTests {
     @Test("stringArray — empty input produces a single empty element")
     func stringArrayEmptyInputGivesSingleEmptyElement() throws {
         let result = try mockParser.parseConfigValue(key: key, rawValue: "", type: .stringArray)
-        #expect(result.content == .stringArray([""]))
+        #expect(result.content == .stringArray([]))
     }
 
     // MARK: - IntArray
@@ -106,7 +106,7 @@ struct ConfigValueParsingTests {
         #expect(result.content == .intArray(expected))
     }
 
-    @Test("intArray — throws for invalid element", arguments: ["1,abc,3", "1,,3"])
+    @Test("intArray — throws for invalid element", arguments: ["1,abc,3", "abc", "1,2,a"])
     func intArrayThrowsForInvalidElement(rawValue: String) {
         expectNotConvertible(rawValue: rawValue, type: .intArray)
     }

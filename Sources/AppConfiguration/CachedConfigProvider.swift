@@ -35,8 +35,8 @@ public struct CachedConfigProvider: Sendable, ConfigProvider, ConfigValueParsing
     /// - Parameters:
     ///   - providerName: A human-readable identifier for the provider.
     ///   - cachedValues: A dictionary of preloaded configuration values.
-    public init(providerName: String, cachedValues: [String: String]) {
-        self.providerName = providerName
+    public init(providerName: ProviderName, cachedValues: [String: String]) {
+        self.providerName = providerName.rawValue
         self.cachedValues = cachedValues
     }
 

@@ -7,7 +7,7 @@ extension CachedConfigProviderTests {
     @Test("ShouldLoadJWKS false — jwks key is absent regardless of config")
     func jwksSkippedWhenFlagFalse() async throws {
         try await withTempApp { app, _ in
-            let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
+            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: false,
@@ -21,7 +21,7 @@ extension CachedConfigProviderTests {
     @Test("ShouldLoadJWKS true, jwksConfig nil — jwks key is absent")
     func jwksSkippedWhenConfigNil() async throws {
         try await withTempApp { app, _ in
-            let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
+            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: true,
@@ -37,7 +37,7 @@ extension CachedConfigProviderTests {
         let content = #"{"keys":[]}"#
         try await withTempApp { app, tmp in
             try content.write(toFile: tmp + "jwks.json", atomically: true, encoding: .utf8)
-            let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
+            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: true,
@@ -51,7 +51,7 @@ extension CachedConfigProviderTests {
     @Test("JWKS file missing — key receives nil")
     func jwksNilWhenFileMissing() async throws {
         try await withTempApp { app, _ in
-            let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
+            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: true,
@@ -69,7 +69,7 @@ extension CachedConfigProviderTests {
             try FileManager.default.createDirectory(atPath: publicDir, withIntermediateDirectories: true)
             try "openapi: 3.0.0\ninfo:\n  version: 2.5.1\n  title: API\n"
                 .write(toFile: publicDir + "openapi.yaml", atomically: true, encoding: .utf8)
-            let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
+            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: false,
@@ -82,7 +82,7 @@ extension CachedConfigProviderTests {
     @Test("openapi.yaml missing — versionKey receives nil")
     func versionNilWhenYamlMissing() async throws {
         try await withTempApp { app, _ in
-            let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
+            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: false,
@@ -99,7 +99,7 @@ extension CachedConfigProviderTests {
             try FileManager.default.createDirectory(atPath: publicDir, withIntermediateDirectories: true)
             try "openapi: 3.0.0\ninfo:\n  title: API\n"
                 .write(toFile: publicDir + "openapi.yaml", atomically: true, encoding: .utf8)
-            let cachedConfigProvider = CachedConfigProvider(providerName: #file, cachedValues: [:])
+            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
                 shouldLoadJWKS: false,
@@ -115,7 +115,7 @@ extension CachedConfigProviderTests {
 extension CachedConfigProviderTests {
     @Test("Returns provider name")
     func providerName() {
-        #expect(makeProvider().providerName == "cached")
+        #expect(makeProvider().providerName == ProviderName.localFile.rawValue)
     }
 
     @Test("Returns string value")
@@ -219,6 +219,6 @@ extension CachedConfigProviderTests {
 
     // MARK: - Helpers
     private func makeProvider(cachedValues: [String: String] = [:]) -> CachedConfigProvider {
-        CachedConfigProvider(providerName: "cached", cachedValues: cachedValues)
+        CachedConfigProvider(providerName: .localFile, cachedValues: cachedValues)
     }
 }

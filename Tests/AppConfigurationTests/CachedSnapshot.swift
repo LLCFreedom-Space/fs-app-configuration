@@ -9,7 +9,7 @@ struct CachedSnapshotTests {
 
     @Test("Returns provider name")
     func providerName() {
-        #expect(makeSnapshot().providerName == "cached")
+        #expect(makeSnapshot().providerName == ProviderName.memory.rawValue)
     }
 
     @Test("Returns value from provider")
@@ -43,6 +43,6 @@ struct CachedSnapshotTests {
 
     // MARK: - Helpers
     private func makeSnapshot(cachedValues: [String: String] = [:]) -> any ConfigSnapshot {
-        CachedConfigProvider(providerName: "cached", cachedValues: cachedValues).snapshot()
+        CachedConfigProvider(providerName: .memory, cachedValues: cachedValues).snapshot()
     }
 }
