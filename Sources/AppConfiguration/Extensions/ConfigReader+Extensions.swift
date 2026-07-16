@@ -101,7 +101,27 @@ public extension ConfigReader {
         let uuidString = string(forKey: ConfigKey(key)) ?? defaultValue.uuidString
         return UUID(uuidString: uuidString) ?? defaultValue
     }
-
+    
+    /// Returns an array of UUID values for the specified configuration key.
+    /// - Parameters:
+    ///   - key: The configuration key.
+    ///   - defaultValue: The value returned if the key is not present.
+    /// - Returns: An array of valid `UUID` values.
+    func uuidArray(forKey key: String, default defaultValue: [UUID] = []) -> [UUID] {
+        guard let value = string(forKey: ConfigKey(key)) else {
+            return defaultValue
+        }
+        return splitCSV(value).compactMap(UUID.init(uuidString:))
+    }
+    
+    /// Returns an array of UUID values for the specified required configuration key.
+    /// - Parameter key: The configuration key.
+    /// - Returns: An array of valid `UUID` values.
+    /// - Throws: `ConfigError.missingRequiredConfigValue` if the key does not exist.
+    func requiredUUIDArray(forKey key: String) throws -> [UUID] {
+        splitCSV(try requiredString(forKey: key)).compactMap(UUID.init(uuidString:))
+    }
+    
     /// Splits a comma-separated string into trimmed components.
     /// - Parameter value: Raw comma-separated string.
     /// - Returns: Array of trimmed string components.
