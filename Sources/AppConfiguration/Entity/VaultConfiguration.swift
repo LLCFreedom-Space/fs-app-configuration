@@ -16,26 +16,29 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //
-//  ProviderName.swift
+//  VaultConfiguration.swift
 //  fs-app-configuration
 //
-//  Created by Mykola Buhaiov on 14.07.2026.
+//  Created by Mykola Buhaiov on 20.07.2026.
 //
 
 import Vapor
 
-/// Identifies the source from which configuration values are loaded.
-/// This value is used for logging, diagnostics, and debugging to indicate
-/// which configuration provider supplied the cached values.
-public enum ProviderName: String, Sendable, Equatable {
-    /// Configuration loaded from a Consul KV store.
-    case consul = "Consul"
-    /// Configuration loaded from environment variables.
-    case environment = "Environment"
-    /// Configuration loaded from a local file.
-    case localFile = "LocalFile"
-    /// Configuration stored in memory, typically used for testing or temporary values.
-    case memory = "Memory"
-    /// Configuration loaded from a HashiCorp Vault KV secrets engine.
-    case vault = "Vault"
+/// Configuration required to connect to a Vault server.
+public struct VaultConfiguration {
+    /// The base URL of the Vault server.
+    public let address: String
+
+    /// The optional Vault Enterprise namespace.
+    public let namespace: String?
+
+    /// Creates a Vault configuration.
+    ///
+    /// - Parameters:
+    ///   - address: The base URL of the Vault server.
+    ///   - namespace: The optional Vault Enterprise namespace.
+    public init(address: String, namespace: String? = nil) {
+        self.address = address
+        self.namespace = namespace
+    }
 }

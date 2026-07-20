@@ -16,26 +16,24 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //
-//  ProviderName.swift
+//  VaultAppRoleLogin.swift
 //  fs-app-configuration
 //
-//  Created by Mykola Buhaiov on 14.07.2026.
+//  Created by Mykola Buhaiov on 20.07.2026.
 //
 
 import Vapor
 
-/// Identifies the source from which configuration values are loaded.
-/// This value is used for logging, diagnostics, and debugging to indicate
-/// which configuration provider supplied the cached values.
-public enum ProviderName: String, Sendable, Equatable {
-    /// Configuration loaded from a Consul KV store.
-    case consul = "Consul"
-    /// Configuration loaded from environment variables.
-    case environment = "Environment"
-    /// Configuration loaded from a local file.
-    case localFile = "LocalFile"
-    /// Configuration stored in memory, typically used for testing or temporary values.
-    case memory = "Memory"
-    /// Configuration loaded from a HashiCorp Vault KV secrets engine.
-    case vault = "Vault"
+/// Request body for authenticating with HashiCorp Vault using the AppRole authentication method.
+public struct VaultAppRoleLogin: Content {
+    /// The Vault AppRole role identifier.
+    public let roleId: String
+
+    /// The Vault AppRole secret identifier.
+    public let secretId: String
+
+    enum CodingKeys: String, CodingKey {
+        case roleId = "role_id"
+        case secretId = "secret_id"
+    }
 }
