@@ -50,7 +50,7 @@ public extension CachedConfigProvider {
         if let versionKey {
             values[versionKey] = loadVersion(app: app)
             app.logger.debug("\(#function)", metadata: [
-                "version": "\(String(describing: values[versionKey]))"
+                "version": .string(String(describing: values[versionKey]))
             ])
         }
         return Self(providerName: .localFile, cachedValues: values)
@@ -65,13 +65,13 @@ public extension CachedConfigProvider {
         let path = app.directory.workingDirectory + jwksFileName
         
         guard let data = FileManager.default.contents(atPath: path) else {
-            app.logger.error("JWKS file not found.", metadata: ["path": "\(path)"])
+            app.logger.error("JWKS file not found.", metadata: ["path": .string(path)])
             return nil
         }
         
         guard let content = String(data: data, encoding: .utf8),
               !content.isEmpty else {
-            app.logger.error("JWKS file is empty or unreadable.", metadata: ["path": "\(path)"])
+            app.logger.error("JWKS file is empty or unreadable.", metadata: ["path": .string(path)])
             return nil
         }
         return content
@@ -82,7 +82,7 @@ public extension CachedConfigProvider {
     func loadVersion(app: Application) -> String? {
         let path = app.directory.publicDirectory + "openapi.yaml"
         guard let yaml = try? String(contentsOfFile: path, encoding: .utf8) else {
-            app.logger.error("openapi.yaml not found.", metadata: ["path": "\(path)"])
+            app.logger.error("openapi.yaml not found.", metadata: ["path": .string(path)])
             return nil
         }
         guard let version = yaml.split(separator: "\n")

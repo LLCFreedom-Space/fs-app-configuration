@@ -36,6 +36,4 @@ public enum ProviderName: String, Sendable, Equatable {
     case localFile = "LocalFile"
     /// Configuration stored in memory, typically used for testing or temporary values.
     case memory = "Memory"
-    /// Configuration loaded from a HashiCorp Vault KV secrets engine.
-    case vault = "Vault"
 }

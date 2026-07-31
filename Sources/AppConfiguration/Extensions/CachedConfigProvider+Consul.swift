@@ -50,7 +50,7 @@ public extension CachedConfigProvider {
         let consulConfigUrl = consulUrl + consulKv + "/" + consulConfigPath + "?recurse=true"
         
         app.logger.debug("\(#function): fetching config.", metadata: [
-            "url": "\(consulConfigUrl)"
+            "url": .string(consulConfigUrl)
         ])
         
         do {
@@ -58,7 +58,7 @@ public extension CachedConfigProvider {
             
             guard response.status == .ok else {
                 app.logger.warning("ConsulHTTPClient: unexpected status.", metadata: [
-                    "status": "\(response.status.code)"
+                    "status": .string(response.status.code.description)
                 ])
                 return .empty(providerName: .consul)
             }
@@ -90,7 +90,7 @@ public extension CachedConfigProvider {
                 : value
             }
             return makeCachedProvider(
-                providerName: .vault,
+                providerName: .consul,
                 values: values,
                 keys: keys,
                 jsonStringKeys: jsonStringKeys,

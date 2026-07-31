@@ -56,23 +56,23 @@ public extension CachedConfigProvider {
         let missingKeys = keys
             .subtracting(dictionary.keys)
             .sorted()
-            .joined(separator: ", ")
-        dictionary[missingKeysKey] = missingKeys
+        let missingKeysString = missingKeys.joined(separator: ", ")
+        if !missingKeys.isEmpty {
+            logger.warning("Missing Consul keys: \(missingKeysString)")
+        }
+        dictionary[missingKeysKey] = missingKeysString
         logger.info("Configuration loaded.", metadata: [
             "provider": .string(providerName.rawValue),
             "loaded": .string(dictionary.count.description),
-            "missingKeys": .string(missingKeys)
+            "missingKeys": .string(missingKeysString)
         ])
-        return Self(
-            providerName: providerName,
-            cachedValues: dictionary
-        )
+        return Self(providerName: providerName, cachedValues: dictionary)
     }
     
     /// Returns an empty cached provider with no values.
     /// - Parameter providerName: The logical name of the provider (used for debugging/logging).
     static func empty(providerName: ProviderName) -> Self {
-        Self(providerName: providerName, cachedValues: [:])
+        Self(providerName: providerName)
     }
 
     /// Attempts to unwrap a JSON-encoded string value.
