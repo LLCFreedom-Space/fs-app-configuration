@@ -27,16 +27,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Verify Swift Format
-        run: swift-format --version
+      - name: Configure Git safe directory
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: Run Swift Format
+      - name: Verify Swift Format
+        run: |
+          swift-format --version
+
+      - name: Format Swift files
         run: |
           swift-format format \
+            --recursive \
             --parallel \
             --in-place \
-            $(git ls-files '*.swift')
+            --configuration .swift-format \
+            Sources Tests
 
-      - name: Check formatting
+      - name: Check formatting changes
         run: |
-          git diff --exit-code -- '*.swift'
+          if ! git diff --quiet -- '*.swift'; then
+            echo "Swift formatting issues found:"
+            echo
+            git diff -- '*.swift'
+            exit 1
+          fi
+
+          echo "Swift formatting is valid."
