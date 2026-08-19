@@ -15,7 +15,10 @@ concurrency:
 jobs:
   format:
     name: Check Swift Formatting
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
+    container:
+      image: swift:6.2-jammy
 
     permissions:
       contents: read
@@ -24,13 +27,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Install curl
-        run: |
-          sudo apt-get -q update
-          sudo apt-get -yq install curl
+      - name: Verify Swift Format
+        run: swift-format --version
 
-      - name: Check Swift Format
+      - name: Run Swift Format
         run: |
-          curl -sL \
-            https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh \
-            | bash
+          swift-format format \
+            --parallel \
+            --in-place \
+            $(git ls-files '*.swift')
+
+      - name: Check formatting
+        run: |
+          git diff --exit-code -- '*.swift'
