@@ -1,6 +1,7 @@
-@testable import AppConfiguration
-import VaporTesting
 import Testing
+import VaporTesting
+
+@testable import AppConfiguration
 @testable import Configuration
 
 @Suite("App configuration tests")
@@ -12,13 +13,13 @@ struct ConfigReaderTests {
             "tags": "a, b, c",
             "uuid": "00000000-0000-0000-0000-000000000000",
             "uuidArray": """
-                00000000-0000-0000-0000-000000000000,
-                11111111-1111-1111-1111-111111111111
-                """,
+            00000000-0000-0000-0000-000000000000,
+            11111111-1111-1111-1111-111111111111
+            """,
             "invalidUUIDArray": """
-                00000000-0000-0000-0000-000000000000,
-                invalid-uuid
-                """
+            00000000-0000-0000-0000-000000000000,
+            invalid-uuid
+            """,
         ])
     )
 
@@ -117,14 +118,14 @@ struct ConfigReaderTests {
         let fallback = UUID()
         #expect(mockConfigReader.uuid(forKey: "missing", default: fallback) == fallback)
     }
-    
+
     // MARK: - UUIDArray
 
     @Test("Parses comma-separated UUID values into array")
     func uuidArrayParsing() {
         let expected = [
             UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
-            UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+            UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
         ]
 
         #expect(mockConfigReader.uuidArray(forKey: "uuidArray") == expected)
@@ -140,7 +141,7 @@ struct ConfigReaderTests {
         let fallback = [UUID()]
         #expect(mockConfigReader.uuidArray(forKey: "missing", default: fallback) == fallback)
     }
-    
+
     @Test("Ignores invalid UUID values")
     func uuidArrayIgnoresInvalidValues() {
         let expected = [
@@ -148,14 +149,14 @@ struct ConfigReaderTests {
         ]
         #expect(mockConfigReader.uuidArray(forKey: "invalidUUIDArray") == expected)
     }
-    
+
     // MARK: - RequiredUUIDArray
 
     @Test("requiredUUIDArray returns parsed UUID array for existing key")
     func requiredUUIDArraySuccess() throws {
         let expected = [
             UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
-            UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+            UUID(uuidString: "11111111-1111-1111-1111-111111111111")!,
         ]
         #expect(try mockConfigReader.requiredUUIDArray(forKey: "uuidArray") == expected)
     }

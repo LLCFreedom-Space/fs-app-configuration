@@ -1,5 +1,6 @@
 import Testing
 import Vapor
+
 @testable import AppConfiguration
 
 @Suite("Application.configReader tests", .serialized)

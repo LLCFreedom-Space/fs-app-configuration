@@ -22,10 +22,10 @@
 //  Created by Mykola Buhaiov on 20.07.2026.
 //
 
-import Vapor
 import Configuration
+import Vapor
 
-public extension CachedConfigProvider {
+extension CachedConfigProvider {
     /// Creates a `CachedConfigProvider` backed by Consul KV storage.
     /// - Parameters:
     ///   - app: The Vapor `Application` used for logging, environment, and HTTP client.
@@ -34,7 +34,7 @@ public extension CachedConfigProvider {
     ///     and require additional unwrapping.
     /// - Returns: A fully initialized `CachedConfigProvider` populated from Consul,
     ///   or an empty provider if the request fails.
-    func consul(
+    public func consul(
         app: Application,
         keys: Set<String>,
         jsonStringKeys: Set<String>,
@@ -43,38 +43,42 @@ public extension CachedConfigProvider {
         guard app.environment != .testing else {
             return Self(providerName: .consul, cachedValues: [:])
         }
-        
+
         let consulUrl = Environment.process.CONSUL_URL ?? "http://127.0.0.1:8500"
         let consulKv = Environment.process.CONSUL_KV ?? "/v1/kv/config-folder"
         let consulConfigPath = Environment.process.CONSUL_CONFIG_PATH ?? "server-name"
         let consulConfigUrl = consulUrl + consulKv + "/" + consulConfigPath + "?recurse=true"
-        
-        app.logger.debug("\(#function): fetching config.", metadata: [
-            "url": .string(consulConfigUrl)
-        ])
-        
+
+        app.logger.debug(
+            "\(#function): fetching config.",
+            metadata: [
+                "url": .string(consulConfigUrl)
+            ])
+
         do {
             let response = try await app.client.get(URI(string: consulConfigUrl))
-            
+
             guard response.status == .ok else {
-                app.logger.warning("ConsulHTTPClient: unexpected status.", metadata: [
-                    "status": .string(response.status.code.description)
-                ])
+                app.logger.warning(
+                    "ConsulHTTPClient: unexpected status.",
+                    metadata: [
+                        "status": .string(response.status.code.description)
+                    ])
                 return .empty(providerName: .consul)
             }
-            
+
             guard var body = response.body else {
                 app.logger.warning("ConsulHTTPClient: empty response body.")
                 return .empty(providerName: .consul)
             }
-            
+
             guard let data = body.readData(length: body.readableBytes) else {
                 app.logger.warning("ConsulHTTPClient: failed to read body bytes.")
                 return .empty(providerName: .consul)
             }
-            
+
             let entries = try JSONDecoder().decode([ConsulKeyValueResponse].self, from: data)
-            
+
             let values = entries.reduce(into: [String: String]()) { result, entry in
                 guard
                     let key = entry.key?.split(separator: "/").last.map(String.init),
@@ -84,10 +88,11 @@ public extension CachedConfigProvider {
                 else {
                     return
                 }
-                
-                result[key] = jsonStringKeys.contains(key)
-                ? unwrapJSONString(value)
-                : value
+
+                result[key] =
+                    jsonStringKeys.contains(key)
+                    ? unwrapJSONString(value)
+                    : value
             }
             return makeCachedProvider(
                 providerName: .consul,

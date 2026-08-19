@@ -22,17 +22,17 @@
 //  Created by Mykola Buhaiov on 07.06.2026.
 //
 
-import Vapor
 import Configuration
+import Vapor
 
-public extension ConfigValueParsing {
+extension ConfigValueParsing {
     /// Parses a raw configuration string into a typed `ConfigValue`.
     /// - Parameters:
     ///   - key: The configuration key associated with the value (used for error reporting).
     ///   - rawValue: The raw string value retrieved from a configuration source.
     ///   - type: The expected type of the configuration value.
     /// - Returns: A `ConfigValue` wrapping the parsed and typed content.
-    func parseConfigValue(
+    public func parseConfigValue(
         key: String,
         rawValue: String,
         type: ConfigType
@@ -67,15 +67,16 @@ public extension ConfigValueParsing {
     /// Splits a comma-separated configuration string into trimmed components.
     /// - Parameter value: The raw comma-separated string.
     /// - Returns: An array of trimmed string components.
-    func parseArray(_ value: String) -> [String] {
+    public func parseArray(_ value: String) -> [String] {
         var seen = Set<String>()
-        return value
+        return
+            value
             .components(separatedBy: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
             .filter { seen.insert($0.lowercased()).inserted }
     }
-    
+
     /// Parses a string into an integer.
     /// - Parameters:
     ///   - value: The raw string value to parse.
@@ -83,7 +84,7 @@ public extension ConfigValueParsing {
     ///   - type: The expected configuration type. Used in the thrown error.
     /// - Throws: `ConfigParseError.valueNotConvertible` if the value cannot be converted to an integer.
     /// - Returns: The parsed integer value.
-    func parseInt(_ value: String, key: String, type: ConfigType) throws -> Int {
+    public func parseInt(_ value: String, key: String, type: ConfigType) throws -> Int {
         guard let int = Int(value) else {
             throw ConfigParseError.valueNotConvertible(key: key, type: type)
         }

@@ -24,14 +24,14 @@
 
 import Vapor
 
-public extension Bool {
+extension Bool {
     /// Parses a string into a boolean value.
     /// - Parameter value: The input string to parse.
     /// - Returns:
     ///   - `true` if the input matches a known true representation
     ///   - `false` if the input matches a known false representation
     ///   - `nil` if the input does not match any supported format
-    static func parse(_ value: String) -> Bool? {
+    public static func parse(_ value: String) -> Bool? {
         switch value.lowercased() {
         case "true", "1", "yes":
             return true

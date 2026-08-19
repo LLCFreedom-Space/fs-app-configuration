@@ -9,7 +9,7 @@ let package = Package(
         .macOS(.v15)
     ],
     products: [
-        .library(name: "AppConfiguration", targets: ["AppConfiguration"]),
+        .library(name: "AppConfiguration", targets: ["AppConfiguration"])
     ],
     dependencies: [
         // 💧 A server-side Swift web framework.
@@ -35,7 +35,7 @@ let package = Package(
                 .target(name: "AppConfiguration"),
                 .product(name: "VaporTesting", package: "vapor"),
             ]
-        )
+        ),
     ]
 )
 
@@ -44,7 +44,8 @@ package.dependencies.append(
     // SwiftLint integration for linting and code style enforcement.
     .package(url: "https://github.com/lukepistrol/SwiftLintPlugin", from: "0.63.1")
 )
-package.targets[0].plugins = (package.targets[0].plugins ?? []) + [
-    .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
-]
+package.targets[0].plugins =
+    (package.targets[0].plugins ?? []) + [
+        .plugin(name: "SwiftLint", package: "SwiftLintPlugin")
+    ]
 #endif

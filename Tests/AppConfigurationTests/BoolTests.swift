@@ -1,6 +1,7 @@
-@testable import AppConfiguration
-import Testing
 import Configuration
+import Testing
+
+@testable import AppConfiguration
 
 @Suite("Bool tests")
 struct BoolTests {
@@ -9,13 +10,13 @@ struct BoolTests {
             #expect(Bool.parse($0) == true)
         }
     }
-    
+
     func testParseFalseValues() {
         ["false", "FALSE", "False", "0", "no", "NO"].forEach {
             #expect((Bool.parse($0) == false))
         }
     }
-    
+
     func testParseInvalidValues() {
         ["", "abc", "2", "on", "off"].forEach {
             #expect((Bool.parse($0)) == nil)

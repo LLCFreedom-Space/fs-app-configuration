@@ -1,7 +1,8 @@
-@testable import AppConfiguration
-import VaporTesting
-import Testing
 import Configuration
+import Testing
+import VaporTesting
+
+@testable import AppConfiguration
 
 extension CachedConfigProviderTests {
     @Test("ShouldLoadJWKS false — jwks key is absent regardless of config")

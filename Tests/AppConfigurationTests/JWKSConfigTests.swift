@@ -1,7 +1,8 @@
-@testable import AppConfiguration
-import VaporTesting
 import Configuration
 import Testing
+import VaporTesting
+
+@testable import AppConfiguration
 
 @Suite("JWKSConfig tests")
 struct JWKSConfigTests {

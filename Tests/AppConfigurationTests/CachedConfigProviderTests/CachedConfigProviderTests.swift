@@ -1,13 +1,14 @@
-@testable import AppConfiguration
-import VaporTesting
-import Testing
 import Configuration
+import Testing
+import VaporTesting
+
+@testable import AppConfiguration
 
 @Suite("CachedConfigProvider")
 struct CachedConfigProviderTests {
     let databaseHostKey = AbsoluteConfigKey(["database", "host"])
     let versionKey = "appVersion"
-    
+
     @Test(".testing — returns empty provider without making an HTTP request")
     func testingEnvironmentReturnsEmpty() async throws {
         try await withApp { app in
@@ -15,7 +16,7 @@ struct CachedConfigProviderTests {
             #expect(provider.cachedValues.isEmpty)
         }
     }
-    
+
     @Test("Successful response — values are decoded from base64")
     func successDecodesValues() async throws {
         try await withApp(environment: .development) { app in
@@ -25,20 +26,20 @@ struct CachedConfigProviderTests {
             #expect(provider.cachedValues["PORT"] == "5432")
         }
     }
-    
+
     @Test("jsonStringKey unwrapJSONString handles all supported formats")
     func jsonStringKeyIsUnwrapped() async throws {
         try await withApp(environment: .development) { app in
             let testCases: [(input: String, expected: String)] = [
-                (#""my-secret""#, "my-secret"),                    // valid JSON string
-                (#""Привіт 🌍""#, "Привіт 🌍"),                    // unicode
-                (#""Hello\nWorld""#, "Hello\nWorld"),              // escaped newline
-                ("\"plain quoted\"", "plain quoted"),              // fallback: quoted string
-                ("   \"trimmed\"   ", "trimmed"),                  // fallback with whitespace
-                ("plain", "plain"),                                // no quotes
-                ("\"unterminated", "\"unterminated"),              // invalid
-                ("\"\"", ""),                                      // empty quoted string
-                ("", "")                                           // empty input
+                (#""my-secret""#, "my-secret"),  // valid JSON string
+                (#""Привіт 🌍""#, "Привіт 🌍"),  // unicode
+                (#""Hello\nWorld""#, "Hello\nWorld"),  // escaped newline
+                ("\"plain quoted\"", "plain quoted"),  // fallback: quoted string
+                ("   \"trimmed\"   ", "trimmed"),  // fallback with whitespace
+                ("plain", "plain"),  // no quotes
+                ("\"unterminated", "\"unterminated"),  // invalid
+                ("\"\"", ""),  // empty quoted string
+                ("", ""),  // empty input
             ]
 
             for testCase in testCases {
@@ -51,7 +52,7 @@ struct CachedConfigProviderTests {
             }
         }
     }
-    
+
     @Test("jsonStringKey without JSON wrapper — value is returned as-is")
     func jsonStringKeyPassthrough() async throws {
         try await withApp(environment: .development) { app in
@@ -60,7 +61,7 @@ struct CachedConfigProviderTests {
             #expect(provider.cachedValues["FLAG"] == "enabled")
         }
     }
-    
+
     @Test("missing keys are recorded in missing-keys (comma-separated, sorted)")
     func missingKeysTracked() async throws {
         try await withApp(environment: .development) { app in

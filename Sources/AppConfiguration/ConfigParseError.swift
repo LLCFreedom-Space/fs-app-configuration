@@ -22,8 +22,8 @@
 //  Created by Mykola Buhaiov on 07.06.2026.
 //
 
-import Vapor
 import Configuration
+import Vapor
 
 /// Errors that can occur while parsing configuration values.
 public enum ConfigParseError: Error, CustomStringConvertible {
@@ -33,7 +33,7 @@ public enum ConfigParseError: Error, CustomStringConvertible {
     /// A human-readable description of the parsing error.
     public var description: String {
         switch self {
-        case let .valueNotConvertible(key, type):
+        case .valueNotConvertible(let key, let type):
             return "Config value for key '\(key)' could not be converted to type \(type)."
         }
     }

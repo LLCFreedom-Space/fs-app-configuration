@@ -1,7 +1,8 @@
-@testable import AppConfiguration
-import VaporTesting
-import Testing
 import Configuration
+import Testing
+import VaporTesting
+
+@testable import AppConfiguration
 
 @Suite("App configuration tests")
 struct ConfigValueParsingTests {
@@ -97,10 +98,12 @@ struct ConfigValueParsingTests {
 
     // MARK: - IntArray
 
-    @Test("intArray — parses valid integers", arguments: [
-        ("1,2,3", [1, 2, 3]),
-        (" 1 , 2 , 3 ", [1, 2, 3])
-    ])
+    @Test(
+        "intArray — parses valid integers",
+        arguments: [
+            ("1,2,3", [1, 2, 3]),
+            (" 1 , 2 , 3 ", [1, 2, 3]),
+        ])
     func intArrayParsesIntegers(rawValue: String, expected: [Int]) throws {
         let result = try mockParser.parseConfigValue(key: key, rawValue: rawValue, type: .intArray)
         #expect(result.content == .intArray(expected))
@@ -118,7 +121,7 @@ struct ConfigValueParsingTests {
             try mockParser.parseConfigValue(key: key, rawValue: rawValue, type: type)
         } throws: { error in
             guard let parseError = error as? ConfigParseError,
-                  case let .valueNotConvertible(errorKey, errorType) = parseError
+                case .valueNotConvertible(let errorKey, let errorType) = parseError
             else { return false }
             return errorKey == key && errorType == type
         }

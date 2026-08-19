@@ -22,8 +22,8 @@
 //  Created by Mykola Buhaiov on 07.06.2026.
 //
 
-import Vapor
 import Configuration
+import Vapor
 
 /// A snapshot representation of configuration values from a `CachedConfigProvider`.
 struct CachedSnapshot: ConfigSnapshot {

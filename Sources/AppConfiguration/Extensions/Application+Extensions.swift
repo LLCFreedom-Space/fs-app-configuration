@@ -25,13 +25,13 @@
 import Configuration
 import Vapor
 
-public extension Application {
+extension Application {
     /// A storage key used to persist `ConfigReader` inside `Application.storage`.
-    struct ConfigReaderKey: StorageKey {
+    public struct ConfigReaderKey: StorageKey {
         public typealias Value = ConfigReader
     }
     /// The shared `ConfigReader` instance attached to the Vapor `Application`.
-    var configReader: ConfigReader {
+    public var configReader: ConfigReader {
         get {
             guard let reader = storage[ConfigReaderKey.self] else {
                 fatalError("ConfigReader not setup. Ensure `configure(_:)` has been called.")

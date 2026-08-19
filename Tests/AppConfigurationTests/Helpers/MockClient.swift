@@ -1,6 +1,7 @@
-@testable import AppConfiguration
-import VaporTesting
 import Configuration
+import VaporTesting
+
+@testable import AppConfiguration
 
 final class MockClient: Client, @unchecked Sendable {
     let eventLoop: any EventLoop
@@ -14,7 +15,7 @@ final class MockClient: Client, @unchecked Sendable {
         self.responder = responder
     }
     func delegating(to eventLoop: any EventLoop) -> any Client { self }
-    
+
     func send(_ request: ClientRequest) -> EventLoopFuture<ClientResponse> {
         do {
             return eventLoop.makeSucceededFuture(try responder(request))

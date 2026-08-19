@@ -22,10 +22,10 @@
 //  Created by Mykola Buhaiov on 07.06.2026.
 //
 
-import Vapor
 import Configuration
+import Vapor
 
-public extension CachedConfigProvider {
+extension CachedConfigProvider {
     /// Creates a cached configuration provider from raw key-value pairs.
     /// - Parameters:
     ///   - providerName: The name of the configuration provider.
@@ -38,7 +38,7 @@ public extension CachedConfigProvider {
     ///   - logger: The logger used to report loading statistics.
     /// - Returns: A configured `CachedConfigProvider` containing the normalized
     ///   configuration values and metadata about any missing keys.
-    func makeCachedProvider(
+    public func makeCachedProvider(
         providerName: ProviderName,
         values: [String: String],
         keys: Set<String>,
@@ -53,7 +53,8 @@ public extension CachedConfigProvider {
             }
             dictionary[key] = unwrapJSONString(value)
         }
-        let missingKeys = keys
+        let missingKeys =
+            keys
             .subtracting(dictionary.keys)
             .sorted()
         let missingKeysString = missingKeys.joined(separator: ", ")
@@ -61,26 +62,29 @@ public extension CachedConfigProvider {
             logger.warning("Missing Consul keys: \(missingKeysString)")
         }
         dictionary[missingKeysKey] = missingKeysString
-        logger.info("Configuration loaded.", metadata: [
-            "provider": .string(providerName.rawValue),
-            "loaded": .string(dictionary.count.description),
-            "missingKeys": .string(missingKeysString)
-        ])
+        logger.info(
+            "Configuration loaded.",
+            metadata: [
+                "provider": .string(providerName.rawValue),
+                "loaded": .string(dictionary.count.description),
+                "missingKeys": .string(missingKeysString),
+            ])
         return Self(providerName: providerName, cachedValues: dictionary)
     }
-    
+
     /// Returns an empty cached provider with no values.
     /// - Parameter providerName: The logical name of the provider (used for debugging/logging).
-    static func empty(providerName: ProviderName) -> Self {
+    public static func empty(providerName: ProviderName) -> Self {
         Self(providerName: providerName)
     }
 
     /// Attempts to unwrap a JSON-encoded string value.
     /// - Parameter raw: The raw string from Consul KV.
     /// - Returns: A cleaned string without extra JSON encoding or quotes.
-    func unwrapJSONString(_ raw: String) -> String {
+    public func unwrapJSONString(_ raw: String) -> String {
         if let data = raw.data(using: .utf8),
-           let unwrapped = try? JSONDecoder().decode(String.self, from: data) {
+            let unwrapped = try? JSONDecoder().decode(String.self, from: data)
+        {
             return unwrapped
         }
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)

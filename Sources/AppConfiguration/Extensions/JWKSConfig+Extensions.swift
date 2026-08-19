@@ -9,7 +9,6 @@ import Vapor
 
 extension JWKSConfig: Equatable {
     public static func == (lhs: JWKSConfig, rhs: JWKSConfig) -> Bool {
-        return lhs.fileName == rhs.fileName &&
-        lhs.key == rhs.key
+        return lhs.fileName == rhs.fileName && lhs.key == rhs.key
     }
 }

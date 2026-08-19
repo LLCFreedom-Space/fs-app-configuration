@@ -22,8 +22,8 @@
 //  Created by Mykola Buhaiov on 07.06.2026.
 //
 
-import Vapor
 import Configuration
+import Vapor
 
 /// A cached in-memory configuration provider.
 public struct CachedConfigProvider: Sendable, ConfigProvider, ConfigValueParsing {
@@ -81,9 +81,10 @@ public struct CachedConfigProvider: Sendable, ConfigProvider, ConfigValueParsing
     public func watchValue<Return: ~Copyable>(
         forKey key: AbsoluteConfigKey,
         type: ConfigType,
-        updatesHandler: nonisolated(nonsending) (
-            _ updates: ConfigUpdatesAsyncSequence<Result<LookupResult, any Error>, Never>
-        ) async throws -> Return
+        updatesHandler:
+            nonisolated(nonsending) (
+                _ updates: ConfigUpdatesAsyncSequence<Result<LookupResult, any Error>, Never>
+            ) async throws -> Return
     ) async throws -> Return {
         try await watchValueFromValue(
             forKey: key,
@@ -103,9 +104,10 @@ public struct CachedConfigProvider: Sendable, ConfigProvider, ConfigValueParsing
     ///   - updatesHandler: A handler receiving snapshot updates over time.
     /// - Returns: A transformed result from the snapshot update stream.
     public func watchSnapshot<Return: ~Copyable>(
-        updatesHandler: nonisolated(nonsending) (
-            _ updates: ConfigUpdatesAsyncSequence<any ConfigSnapshot, Never>
-        ) async throws -> Return
+        updatesHandler:
+            nonisolated(nonsending) (
+                _ updates: ConfigUpdatesAsyncSequence<any ConfigSnapshot, Never>
+            ) async throws -> Return
     ) async throws -> Return {
         try await watchSnapshotFromSnapshot(updatesHandler: updatesHandler)
     }

@@ -22,8 +22,8 @@
 //  Created by Mykola Buhaiov on 07.06.2026.
 //
 
-import Vapor
 import Configuration
+import Vapor
 
 /// A protocol responsible for converting raw configuration values into typed `ConfigValue` objects.
 public protocol ConfigValueParsing {

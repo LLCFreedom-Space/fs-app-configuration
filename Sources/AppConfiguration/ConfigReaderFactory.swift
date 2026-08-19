@@ -22,8 +22,8 @@
 //  Created by Mykola Buhaiov on 15.06.2026.
 //
 
-import Vapor
 import Configuration
+import Vapor
 
 /// A namespace for factory methods that configure and attach a `ConfigReader` to a Vapor `Application`.
 public enum ConfigReaderFactory {
@@ -70,11 +70,11 @@ public enum ConfigReaderFactory {
             providers: [
                 consulProvider,
                 envProvider,
-                fileProvider
+                fileProvider,
             ]
         )
     }
-    
+
     /// Determines whether JWKS should be loaded from local files instead of Consul.
     /// - Parameters:
     ///   - jwksConfig: Optional JWKS configuration.
@@ -89,7 +89,7 @@ public enum ConfigReaderFactory {
         }
         return !consulProvider.hasValue(forKey: jwksConfig.key)
     }
-    
+
     /// Resolves the effective JWKS config.
     /// When loading from local files, allows ENV to override the default file name.
     static func resolveJWKSConfig(
@@ -102,16 +102,20 @@ public enum ConfigReaderFactory {
             return jwksConfig
         }
         guard let envFileName = try? envProvider.environmentValue(forName: config.environmentKey) else {
-            app.logger.debug("ENV key not set, using default JWKS file name.", metadata: [
-                "envKey": .string(config.environmentKey),
-                "fileName": .string(config.fileName)
-            ])
+            app.logger.debug(
+                "ENV key not set, using default JWKS file name.",
+                metadata: [
+                    "envKey": .string(config.environmentKey),
+                    "fileName": .string(config.fileName),
+                ])
             return config
         }
-        app.logger.debug("JWKS file name resolved from ENV.", metadata: [
-            "envKey": .string(config.environmentKey),
-            "fileName": .string(envFileName)
-        ])
+        app.logger.debug(
+            "JWKS file name resolved from ENV.",
+            metadata: [
+                "envKey": .string(config.environmentKey),
+                "fileName": .string(envFileName),
+            ])
         return JWKSConfig(fileName: envFileName, key: config.key)
     }
 }
