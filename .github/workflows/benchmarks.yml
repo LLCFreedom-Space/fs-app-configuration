@@ -27,20 +27,114 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install benchmark dependencies
+        run: |
+          apt-get update
+          apt-get install -y time
+
       - name: Show environment
         run: |
-          echo "OS:"
-          uname -a
-
-          echo
-          echo "Architecture:"
-          uname -m
-
-          echo
+          echo "========================================"
+          echo " Vapor CI Benchmark"
+          echo "========================================"
+          echo "OS:           $(uname -s)"
+          echo "Architecture: $(uname -m)"
           echo "Swift:"
           swift --version
+          echo "========================================"
 
       - name: Run benchmarks
+        shell: bash
         run: |
-          chmod +x scripts/benchmark.sh
-          ./scripts/benchmark.sh
+          set -euo pipefail
+
+          RESULTS_FILE="$RUNNER_TEMP/benchmark-results.tsv"
+
+          echo -e "Benchmark\tTime (s)\tMemory (MB)" > "$RESULTS_FILE"
+
+          run_benchmark() {
+            local name="$1"
+            shift
+
+            local output
+            local elapsed
+            local memory_kb
+            local memory_mb
+
+            echo
+            echo "========================================"
+            echo " $name"
+            echo "========================================"
+
+            output=$(/usr/bin/time -v "$@" 2>&1)
+
+            echo "$output"
+
+            elapsed=$(echo "$output" | awk -F': ' '/Elapsed \(wall clock\) time/ {print $2}')
+            memory_kb=$(echo "$output" | awk -F': ' '/Maximum resident set size/ {print $2}')
+
+            if [[ "$elapsed" =~ ^([0-9]+):([0-9]+\.[0-9]+)$ ]]; then
+              elapsed_seconds=$(awk -v m="${BASH_REMATCH[1]}" -v s="${BASH_REMATCH[2]}" 'BEGIN { printf "%.2f", m * 60 + s }')
+            else
+              elapsed_seconds="$elapsed"
+            fi
+
+            memory_mb=$(awk -v kb="$memory_kb" 'BEGIN { printf "%.2f", kb / 1024 }')
+
+            echo -e "${name}\t${elapsed_seconds}\t${memory_mb}" >> "$RESULTS_FILE"
+          }
+
+          run_benchmark \
+            "Dependency Resolve" \
+            swift package resolve
+
+          rm -rf .build
+
+          run_benchmark \
+            "Clean Debug Build" \
+            swift build
+
+          run_benchmark \
+            "Incremental Debug Build" \
+            swift build
+
+          run_benchmark \
+            "Tests" \
+            swift test
+
+          rm -rf .build
+
+          run_benchmark \
+            "Clean Release Build" \
+            swift build -c release
+
+          echo
+          echo "========================================"
+          echo " Benchmark Results"
+          echo "========================================"
+
+          column -t -s $'\t' "$RESULTS_FILE"
+
+      - name: Publish benchmark summary
+        shell: bash
+        run: |
+          RESULTS_FILE="$RUNNER_TEMP/benchmark-results.tsv"
+
+          {
+            echo "## Swift CI Benchmarks"
+            echo
+            echo "| Benchmark | Time (s) | Peak Memory (MB) |"
+            echo "|---|---:|---:|"
+
+            tail -n +2 "$RESULTS_FILE" | while IFS=$'\t' read -r name time memory; do
+              echo "| $name | $time | $memory |"
+            done
+
+            echo
+            echo "**Environment**"
+            echo
+            echo "- Runner: \`ubuntu-24.04\`"
+            echo "- Container: \`swift:6.2-jammy\`"
+            echo "- Architecture: \`$(uname -m)\`"
+            echo "- Swift: \`$(swift --version | head -n 1)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
