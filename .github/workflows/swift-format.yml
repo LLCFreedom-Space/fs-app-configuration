@@ -2,9 +2,14 @@ name: Swift Format
 
 on:
   push:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 concurrency:
-  group: swift-format-${{ github.event.pull_request.number }}
+  group: swift-format-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -19,7 +24,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Install curl
+        run: |
+          sudo apt-get -q update
+          sudo apt-get -yq install curl
+
       - name: Check Swift Format
         run: |
-          apt -q update && apt -yq install curl
-          curl -sL https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash
+          curl -sL \
+            https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh \
+            | bash
