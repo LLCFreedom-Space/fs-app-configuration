@@ -26,98 +26,55 @@ import Vapor
 import Configuration
 
 public extension CachedConfigProvider {
-    /// Creates a `CachedConfigProvider` backed by Consul KV storage.
+    /// Creates a cached configuration provider from raw key-value pairs.
     /// - Parameters:
-    ///   - app: The Vapor `Application` used for logging, environment, and HTTP client.
-    ///   - keys: A set of expected configuration keys. Used to detect missing values.
-    ///   - jsonStringKeys: Keys whose values are expected to be JSON-encoded strings
-    ///     and require additional unwrapping.
-    /// - Returns: A fully initialized `CachedConfigProvider` populated from Consul,
-    ///   or an empty provider if the request fails.
-    func consul(
-        app: Application,
+    ///   - providerName: The name of the configuration provider.
+    ///   - values: The raw configuration values loaded from the provider.
+    ///   - keys: The complete set of expected configuration keys.
+    ///   - jsonStringKeys: Keys whose values are JSON-encoded strings and should
+    ///     be unwrapped before caching.
+    ///   - missingKeysKey: The key under which a comma-separated list of missing
+    ///     configuration keys will be stored.
+    ///   - logger: The logger used to report loading statistics.
+    /// - Returns: A configured `CachedConfigProvider` containing the normalized
+    ///   configuration values and metadata about any missing keys.
+    func makeCachedProvider(
+        providerName: ProviderName,
+        values: [String: String],
         keys: Set<String>,
         jsonStringKeys: Set<String>,
-        missingKeysKey: String
-    ) async -> Self {
-        guard app.environment != .testing else {
-            return Self(providerName: .consul, cachedValues: [:])
+        missingKeysKey: String,
+        logger: Logger
+    ) -> Self {
+        var dictionary = values
+        for key in jsonStringKeys {
+            guard let value = dictionary[key] else {
+                continue
+            }
+            dictionary[key] = unwrapJSONString(value)
         }
-        
-        let consulUrl = Environment.process.CONSUL_URL ?? "http://127.0.0.1:8500"
-        let consulKv = Environment.process.CONSUL_KV ?? "/v1/kv/config-folder"
-        let consulConfigPath = Environment.process.CONSUL_CONFIG_PATH ?? "server-name"
-        let consulConfigUrl = consulUrl + consulKv + "/" + consulConfigPath + "?recurse=true"
-        
-        app.logger.debug("\(#function): fetching config.", metadata: [
-            "url": "\(consulConfigUrl)"
+        let missingKeys = keys
+            .subtracting(dictionary.keys)
+            .sorted()
+        let missingKeysString = missingKeys.joined(separator: ", ")
+        if !missingKeys.isEmpty {
+            logger.warning("Missing Consul keys: \(missingKeysString)")
+        }
+        dictionary[missingKeysKey] = missingKeysString
+        logger.info("Configuration loaded.", metadata: [
+            "provider": .string(providerName.rawValue),
+            "loaded": .string(dictionary.count.description),
+            "missingKeys": .string(missingKeysString)
         ])
-        
-        do {
-            let response = try await app.client.get(URI(string: consulConfigUrl))
-            
-            guard response.status == .ok else {
-                app.logger.warning("ConsulHTTPClient: unexpected status.", metadata: [
-                    "status": "\(response.status.code)"
-                ])
-                return .empty(providerName: .consul)
-            }
-            
-            guard var body = response.body else {
-                app.logger.warning("ConsulHTTPClient: empty response body.")
-                return .empty(providerName: .consul)
-            }
-            
-            guard let data = body.readData(length: body.readableBytes) else {
-                app.logger.warning("ConsulHTTPClient: failed to read body bytes.")
-                return .empty(providerName: .consul)
-            }
-            
-            let entries = try JSONDecoder().decode([ConsulKeyValueResponse].self, from: data)
-            
-            var dictionary = entries.reduce(into: [String: String]()) { result, entry in
-                guard
-                    let key = entry.key?.split(separator: "/").last.map(String.init),
-                    let base64Value = entry.value,
-                    let decoded = Data(base64Encoded: base64Value),
-                    let value = String(data: decoded, encoding: .utf8)
-                else {
-                    return
-                }
-                
-                result[key] = jsonStringKeys.contains(key)
-                ? unwrapJSONString(value)
-                : value
-            }
-            
-            let missingKeys = keys
-                .filter { !dictionary.keys.contains($0) }
-                .subtracting(dictionary.keys)
-                .joined(separator: ", ")
-            
-            app.logger.info("\(#function): config loaded.", metadata: [
-                "loaded": "\(dictionary.count)",
-                "missingKeys": "\(missingKeys)"
-            ])
-            
-            dictionary[missingKeysKey] = missingKeys
-            
-            return Self(providerName: .consul, cachedValues: dictionary)
-        } catch let error as DecodingError {
-            app.logger.error("ConsulHTTPClient: failed to decode KV response.", error: error)
-            return .empty(providerName: .consul)
-        } catch {
-            app.logger.warning("ConsulHTTPClient: KV fetch failed.", error: error)
-            return .empty(providerName: .consul)
-        }
+        return Self(providerName: providerName, cachedValues: dictionary)
     }
     
     /// Returns an empty cached provider with no values.
     /// - Parameter providerName: The logical name of the provider (used for debugging/logging).
     static func empty(providerName: ProviderName) -> Self {
-        Self(providerName: providerName, cachedValues: [:])
+        Self(providerName: providerName)
     }
-    
+
     /// Attempts to unwrap a JSON-encoded string value.
     /// - Parameter raw: The raw string from Consul KV.
     /// - Returns: A cleaned string without extra JSON encoding or quotes.
@@ -131,75 +88,5 @@ public extension CachedConfigProvider {
             return String(trimmed.dropFirst().dropLast())
         }
         return raw
-    }
-}
-
-public extension CachedConfigProvider {
-    /// Creates a `CachedConfigProvider` backed by local filesystem values.
-    /// - Parameters:
-    ///   - app: The Vapor `Application` used for file paths and logging.
-    ///   - shouldLoadJWKS: Whether JWKS should be loaded from disk.
-    ///   - jwksConfig: Optional JWKS configuration describing file location and key name.
-    ///   - versionKey: The configuration key used to store application version.
-    /// - Returns: A `CachedConfigProvider` containing locally loaded values.
-    func localFile(
-        app: Application,
-        shouldLoadJWKS: Bool,
-        jwksConfig: JWKSConfig? = nil,
-        versionKey: String? = nil
-    ) -> Self {
-        var values: [String: String] = [:]
-        if shouldLoadJWKS, let jwksConfig {
-            values[jwksConfig.key] = loadJWKS(app: app, jwksFileName: jwksConfig.fileName)
-            
-            app.logger.debug("\(#function)", metadata: [
-                "jwksLoaded": "\(values[jwksConfig.key] != nil)"
-            ])
-        }
-        if let versionKey {
-            values[versionKey] = loadVersion(app: app)
-            app.logger.debug("\(#function)", metadata: [
-                "version": "\(String(describing: values[versionKey]))"
-            ])
-        }
-        return Self(providerName: .localFile, cachedValues: values)
-    }
-    
-    /// Loads a JWKS file from disk.
-    /// - Parameters:
-    ///   - app: The Vapor application providing directory paths.
-    ///   - jwksFileName: Relative path to JWKS file.
-    /// - Returns: JWKS content as a string, or `nil` if missing or invalid.
-    func loadJWKS(app: Application, jwksFileName: String) -> String? {
-        let path = app.directory.workingDirectory + jwksFileName
-        
-        guard let data = FileManager.default.contents(atPath: path) else {
-            app.logger.error("JWKS file not found.", metadata: ["path": "\(path)"])
-            return nil
-        }
-        
-        guard let content = String(data: data, encoding: .utf8),
-              !content.isEmpty else {
-            app.logger.error("JWKS file is empty or unreadable.", metadata: ["path": "\(path)"])
-            return nil
-        }
-        return content
-    }
-    
-    /// Loads the application version from `openapi.yaml`.
-    /// - Returns: Version string if found, otherwise `nil`.
-    func loadVersion(app: Application) -> String? {
-        let path = app.directory.publicDirectory + "openapi.yaml"
-        guard let yaml = try? String(contentsOfFile: path, encoding: .utf8) else {
-            app.logger.error("openapi.yaml not found.", metadata: ["path": "\(path)"])
-            return nil
-        }
-        guard let version = yaml.split(separator: "\n")
-            .first(where: { $0.contains("version: ") }),
-              !version.isEmpty else {
-            app.logger.warning("Version not found in openapi.yaml.")
-            return nil
-        }
-        return String(version)
     }
 }

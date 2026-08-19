@@ -1,9 +1,8 @@
 @testable import AppConfiguration
 import VaporTesting
-import Testing
 import Configuration
 
-final class MockHTTPClient: Client, @unchecked Sendable {
+final class MockClient: Client, @unchecked Sendable {
     let eventLoop: any EventLoop
     let responder: @Sendable (ClientRequest) throws -> ClientResponse
 

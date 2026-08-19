@@ -10,7 +10,7 @@ extension Application {
         error: Error? = nil
     ) {
         clients.use { app in
-            MockHTTPClient(eventLoop: app.eventLoopGroup.any()) { _ in
+            MockClient(eventLoop: app.eventLoopGroup.any()) { _ in
                 if let error {
                     throw error
                 }
