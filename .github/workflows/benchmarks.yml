@@ -1,0 +1,46 @@
+name: Benchmarks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+      - stage
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    name: Swift CI Benchmarks
+    runs-on: ubuntu-latest
+
+    container:
+      image: swift:6.2-jammy
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show environment
+        run: |
+          echo "OS:"
+          uname -a
+
+          echo
+          echo "Architecture:"
+          uname -m
+
+          echo
+          echo "Swift:"
+          swift --version
+
+      - name: Run benchmarks
+        run: |
+          chmod +x scripts/benchmark.sh
+          ./scripts/benchmark.sh

@@ -1,0 +1,25 @@
+name: Swift Format
+
+on:
+  push:
+
+concurrency:
+  group: swift-format-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    name: Check Swift Formatting
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Check Swift Format
+        run: |
+          apt -q update && apt -yq install curl
+          curl -sL https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash
