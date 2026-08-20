@@ -53,7 +53,7 @@
     "OneVariableDeclarationPerLine": true,
     "OnlyOneTrailingClosureArgument": true,
     "OrderedImports": true,
-    "ReplaceForEachWithForLoop": true,
+    "ReplaceForEachWithForLoop": false,
     "ReturnVoidInsteadOfEmptyTuple": true,
     "TypeNamesShouldBeCapitalized": true,
     "UseEarlyExits": true,
@@ -67,6 +67,6 @@
     "ValidateDocumentationComments": true
   },
   "spacesAroundRangeFormationOperators": false,
-  "tabWidth": 8,
+  "tabWidth": 4,
   "version": 1
 }
