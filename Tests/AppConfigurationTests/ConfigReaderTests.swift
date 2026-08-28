@@ -175,4 +175,46 @@ struct ConfigReaderTests {
         ]
         #expect(try mockConfigReader.requiredUUIDArray(forKey: "invalidUUIDArray") == expected)
     }
+    
+    // MARK: - RequiredString as Value
+    @Test("requiredString returns raw representable value for existing key")
+    func requiredStringRawRepresentableSuccess() throws {
+        let reader = ConfigReader(
+            provider: InMemoryProvider(values: [
+                "environment": "production"
+            ])
+        )
+        let value = try reader.requiredString(forKey: "environment", as: TestEnvironment.self)
+        #expect(value == .production)
+    }
+    
+    @Test("requiredString throws when raw representable key is missing")
+    func requiredStringRawRepresentableThrows() {
+        #expect(throws: ConfigError.missingRequiredConfigValue("missing")) {
+            try mockConfigReader.requiredString(
+                forKey: "missing",
+                as: TestEnvironment.self
+            )
+        }
+    }
+
+    @Test("requiredString throws when raw representable value is invalid")
+    func requiredStringRawRepresentableInvalidValueThrows() {
+        let reader = ConfigReader(
+            provider: InMemoryProvider(values: [
+                "environment": "invalid"
+            ])
+        )
+
+        #expect(throws: Error.self) {
+            try reader.requiredString(
+                forKey: "environment",
+                as: TestEnvironment.self
+            )
+        }
+    }
+    private enum TestEnvironment: String {
+        case development
+        case production
+    }
 }

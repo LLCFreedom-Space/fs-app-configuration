@@ -73,6 +73,20 @@ extension ConfigReader {
     public func requiredString(forKey key: String) throws -> String {
         try requiredString(forKey: ConfigKey(key))
     }
+    
+    /// Retrieves a required string value for the specified key and converts it
+    /// to the given `RawRepresentable` type.
+    /// - Parameters:
+    ///   - key: The configuration key used to retrieve the value.
+    ///   - type: The `RawRepresentable` type to convert the string value to.
+    /// - Returns: The value converted to the specified type.
+    /// - Throws: An error if the value is missing or cannot be converted to the specified type.
+    func requiredString<Value: RawRepresentable<String>>(
+        forKey key: String,
+        as type: Value.Type
+    ) throws -> Value {
+        try requiredString(forKey: ConfigKey(key), as: type)
+    }
 
     /// Returns a string array parsed from a comma-separated configuration value.
     /// - Parameter key: The configuration key.
