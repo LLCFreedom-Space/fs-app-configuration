@@ -135,6 +135,40 @@ extension ConfigReader {
     public func requiredUUIDArray(forKey key: String) throws -> [UUID] {
         splitCSV(try requiredString(forKey: key)).compactMap(UUID.init(uuidString:))
     }
+    
+    /// Gets a required `Double` configuration value for the specified key.
+    ///
+    /// - Parameter key: The configuration key.
+    /// - Returns: The `Double` value associated with the key.
+    /// - Throws: An error if the configuration value is missing or cannot be converted to `Double`.
+    func requiredDouble(forKey key: String) throws -> Double {
+        try requiredDouble(forKey: ConfigKey(key))
+    }
+
+    /// Gets an optional `Double` configuration value for the specified key.
+    ///
+    /// - Parameter key: The configuration key.
+    /// - Returns: The `Double` value associated with the key, or `nil` if the value is not available.
+    func double(forKey key: String) -> Double? {
+        double(forKey: ConfigKey(key))
+    }
+
+    /// Gets a required `Bool` configuration value for the specified key.
+    ///
+    /// - Parameter key: The configuration key.
+    /// - Returns: The `Bool` value associated with the key.
+    /// - Throws: An error if the configuration value is missing or cannot be converted to `Bool`.
+    func requiredBool(forKey key: String) throws -> Bool {
+        try requiredBool(forKey: ConfigKey(key))
+    }
+
+    /// Gets an optional `Bool` configuration value for the specified key.
+    ///
+    /// - Parameter key: The configuration key.
+    /// - Returns: The `Bool` value associated with the key, or `nil` if the value is not available.
+    func bool(forKey key: String) -> Bool? {
+        bool(forKey: ConfigKey(key))
+    }
 
     /// Splits a comma-separated string into trimmed components.
     /// - Parameter value: Raw comma-separated string.
