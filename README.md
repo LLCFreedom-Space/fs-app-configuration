@@ -33,7 +33,6 @@ Call `setupConfigReader` once during app startup, typically in `configure.swift`
 ```swift
 try await setupConfigReader(
     app: app,
-    jwksConfig: JWKSConfig(fileName: "public.jwks.json", key: "jwks"),
     versionKey: "app-version",
     keys: ["database-url", "redis-url", "timeout"],
     jsonStringKeys: ["jwt-secret", "private-key"]
@@ -42,7 +41,6 @@ try await setupConfigReader(
 
 | Parameter | Description |
 |---|---|
-| `jwksConfig` | Filename and config key for the JWKS JSON. Pass `nil` to skip. |
 | `versionKey` | Key under which the app version (from `openapi.yaml`) is stored. |
 | `keys` | All plain-text keys expected from Consul. Used to detect missing keys. |
 | `jsonStringKeys` | Keys whose values are JSON-encoded strings and need to be unwrapped. |
@@ -79,7 +77,7 @@ let traceID  = app.configReader.uuid(forKey: "trace-id", default: UUID())
 |---|---|---|
 | `CONSUL_URL` | `http://127.0.0.1:8500` | Consul base URL |
 | `CONSUL_KV` | `/v1/kv/config-folder` | KV store path prefix |
-| `CONSUL_CONFIG_PATH` | `serverName` | Config folder name inside the prefix |
+| `CONSUL_CONFIG_PATH` | `server-name` | Config folder name inside the prefix |
 
 The final Consul URL is assembled as:
 ```
@@ -105,8 +103,6 @@ let consulProvider = await CachedConfigProvider.consul(
 // Sync — reads JWKS and version from disk
 let fileProvider = CachedConfigProvider.localFile(
     app: app,
-    shouldLoadJWKS: !consulProvider.hasValue(forKey: jwksConfig?.key),
-    jwksConfig: jwksConfig,
     versionKey: versionKey
 )
 ```
@@ -130,18 +126,7 @@ A protocol with a default `parseConfigValue(key:rawValue:type:)` implementation.
 
 The protocol requires a `logger: Logger` property. Parse failures are logged as `.warning` before throwing `ConfigParseError.valueNotConvertible`. Successful parses emit a `.trace` entry.
 
----
-
-### `JWKSConfig`
-
-```swift
-public struct JWKSConfig: Content {
-    let fileName: String  // e.g. "public.jwks.json"
-    let key: String       // e.g. "jwks"
-}
-```
-
----
+--
 
 ### `ConsulKVEntry`
 

@@ -1,68 +1,9 @@
 import Configuration
 import Testing
 import VaporTesting
-
 @testable import AppConfiguration
 
 extension CachedConfigProviderTests {
-    @Test("ShouldLoadJWKS false — jwks key is absent regardless of config")
-    func jwksSkippedWhenFlagFalse() async throws {
-        try await withTempApp { app, _ in
-            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
-            let provider = cachedConfigProvider.localFile(
-                app: app,
-                shouldLoadJWKS: false,
-                jwksConfig: JWKSConfig(fileName: "jwks.json", key: "jwks"),
-                versionKey: versionKey
-            )
-            #expect(provider.cachedValues["jwks"] == nil)
-        }
-    }
-
-    @Test("ShouldLoadJWKS true, jwksConfig nil — jwks key is absent")
-    func jwksSkippedWhenConfigNil() async throws {
-        try await withTempApp { app, _ in
-            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
-            let provider = cachedConfigProvider.localFile(
-                app: app,
-                shouldLoadJWKS: true,
-                jwksConfig: nil,
-                versionKey: versionKey
-            )
-            #expect(provider.cachedValues["jwks"] == nil)
-        }
-    }
-
-    @Test("JWKS file exists — content is stored under the key")
-    func jwksLoadedFromFile() async throws {
-        let content = #"{"keys":[]}"#
-        try await withTempApp { app, tmp in
-            try content.write(toFile: tmp + "jwks.json", atomically: true, encoding: .utf8)
-            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
-            let provider = cachedConfigProvider.localFile(
-                app: app,
-                shouldLoadJWKS: true,
-                jwksConfig: JWKSConfig(fileName: "jwks.json", key: "jwks"),
-                versionKey: versionKey
-            )
-            #expect(provider.cachedValues["jwks"] == content)
-        }
-    }
-
-    @Test("JWKS file missing — key receives nil")
-    func jwksNilWhenFileMissing() async throws {
-        try await withTempApp { app, _ in
-            let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
-            let provider = cachedConfigProvider.localFile(
-                app: app,
-                shouldLoadJWKS: true,
-                jwksConfig: JWKSConfig(fileName: "no-such-file.json", key: "jwks"),
-                versionKey: versionKey
-            )
-            #expect(provider.cachedValues["jwks"] == nil)
-        }
-    }
-
     @Test("openapi.yaml with version line — version is stored under versionKey")
     func versionParsedFromYaml() async throws {
         try await withTempApp { app, tmp in
@@ -73,7 +14,6 @@ extension CachedConfigProviderTests {
             let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
-                shouldLoadJWKS: false,
                 versionKey: versionKey
             )
             #expect(provider.cachedValues[versionKey]?.contains("2.5.1") == true)
@@ -86,7 +26,6 @@ extension CachedConfigProviderTests {
             let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
-                shouldLoadJWKS: false,
                 versionKey: versionKey
             )
             #expect(provider.cachedValues[versionKey] == nil)
@@ -103,7 +42,6 @@ extension CachedConfigProviderTests {
             let cachedConfigProvider = CachedConfigProvider(providerName: .localFile, cachedValues: [:])
             let provider = cachedConfigProvider.localFile(
                 app: app,
-                shouldLoadJWKS: false,
                 versionKey: versionKey
             )
             #expect(provider.cachedValues[versionKey] == nil)
@@ -195,7 +133,7 @@ extension CachedConfigProviderTests {
                 forKey: AbsoluteConfigKey("PORT"),
                 type: .string
             ) { updates in
-                var count = 0
+                var count: Int = .zero
                 for await _ in updates {
                     count += 1
                     return count

@@ -1,6 +1,5 @@
 import Configuration
 import VaporTesting
-
 @testable import AppConfiguration
 
 final class MockClient: Client, @unchecked Sendable {

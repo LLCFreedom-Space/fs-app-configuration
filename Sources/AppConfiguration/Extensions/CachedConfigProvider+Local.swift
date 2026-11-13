@@ -27,77 +27,64 @@ import Vapor
 
 extension CachedConfigProvider {
     /// Creates a `CachedConfigProvider` backed by local filesystem values.
+    ///
     /// - Parameters:
     ///   - app: The Vapor `Application` used for file paths and logging.
-    ///   - shouldLoadJWKS: Whether JWKS should be loaded from disk.
-    ///   - jwksConfig: Optional JWKS configuration describing file location and key name.
     ///   - versionKey: The configuration key used to store application version.
     /// - Returns: A `CachedConfigProvider` containing locally loaded values.
     public func localFile(
         app: Application,
-        shouldLoadJWKS: Bool,
-        jwksConfig: JWKSConfig? = nil,
         versionKey: String? = nil
     ) -> Self {
         var values: [String: String] = [:]
-        if shouldLoadJWKS, let jwksConfig {
-            values[jwksConfig.key] = loadJWKS(app: app, jwksFileName: jwksConfig.fileName)
-
-            app.logger.debug(
-                "\(#function)",
-                metadata: [
-                    "jwksLoaded": "\(values[jwksConfig.key] != nil)"
-                ])
-        }
         if let versionKey {
-            values[versionKey] = loadVersion(app: app)
-            app.logger.debug(
-                "\(#function)",
-                metadata: [
-                    "version": .string(String(describing: values[versionKey]))
-                ])
+            let version = loadVersionFromOpenapi(app: app) ?? localFile(app: app)
+            if let version {
+                values[versionKey] = version
+                app.logger.debug(
+                    "\(#function): Application version loaded.",
+                    metadata: ["version": .string(version)]
+                )
+            }
         }
         return Self(providerName: .localFile, cachedValues: values)
     }
-
-    /// Loads a JWKS file from disk.
-    /// - Parameters:
-    ///   - app: The Vapor application providing directory paths.
-    ///   - jwksFileName: Relative path to JWKS file.
-    /// - Returns: JWKS content as a string, or `nil` if missing or invalid.
-    public func loadJWKS(app: Application, jwksFileName: String) -> String? {
-        let path = app.directory.workingDirectory + jwksFileName
-
-        guard let data = FileManager.default.contents(atPath: path) else {
-            app.logger.error("JWKS file not found.", metadata: ["path": .string(path)])
-            return nil
-        }
-
-        guard let content = String(data: data, encoding: .utf8),
-            !content.isEmpty
-        else {
-            app.logger.error("JWKS file is empty or unreadable.", metadata: ["path": .string(path)])
-            return nil
-        }
-        return content
-    }
-
+    
     /// Loads the application version from `openapi.yaml`.
+    ///
+    /// - Parameter app: The Vapor `Application` used to resolve the file path and log errors.
     /// - Returns: Version string if found, otherwise `nil`.
-    public func loadVersion(app: Application) -> String? {
+    public func loadVersionFromOpenapi(app: Application) -> String? {
         let path = app.directory.publicDirectory + "openapi.yaml"
         guard let yaml = try? String(contentsOfFile: path, encoding: .utf8) else {
             app.logger.error("openapi.yaml not found.", metadata: ["path": .string(path)])
             return nil
         }
-        guard
-            let version = yaml.split(separator: "\n")
-                .first(where: { $0.contains("version: ") }),
-            !version.isEmpty
-        else {
+        guard let version = yaml.split(separator: "\n")
+            .first(where: { $0.contains("version: ") })?
+            .split(separator: ":", maxSplits: 1)
+            .last?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !version.isEmpty else {
             app.logger.warning("Version not found in openapi.yaml.")
             return nil
         }
-        return String(version)
+        return version
+    }
+    
+    /// Loads the application version from the local `VERSION` file.
+    ///
+    /// - Parameter app: The Vapor `Application` used to resolve the file path and log errors.
+    /// - Returns: Version string if found, otherwise `nil`.
+    public func localFile(app: Application) -> String? {
+        let versionPath = app.directory.workingDirectory + "VERSION"
+        guard let data = FileManager.default.contents(atPath: versionPath),
+              let version = String(data: data, encoding: .utf8)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !version.isEmpty else {
+            app.logger.error("File VERSION not found or empty.", metadata: ["path": .string(versionPath)])
+            return nil
+        }
+        return version
     }
 }

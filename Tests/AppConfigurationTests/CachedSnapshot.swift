@@ -1,6 +1,5 @@
 import Testing
 import VaporTesting
-
 @testable import AppConfiguration
 @testable import Configuration
 

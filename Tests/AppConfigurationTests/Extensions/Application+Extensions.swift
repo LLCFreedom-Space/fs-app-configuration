@@ -1,7 +1,6 @@
 import Configuration
 import Testing
 import VaporTesting
-
 @testable import AppConfiguration
 
 extension Application {
